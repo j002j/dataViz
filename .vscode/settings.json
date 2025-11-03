@@ -10,5 +10,6 @@
             "database": "starterkit_db",
             "username": "jenny"
         }
-    ]
+    ],
+    "python-envs.pythonProjects": []
 }

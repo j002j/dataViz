@@ -1,0 +1,9 @@
+# Mapillary Pipeline
+mapillary
+ultralytics
+opencv-python-headless
+requests
+
+# Database & Config
+psycopg2-binary
+python-dotenv
