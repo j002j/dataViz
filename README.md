@@ -48,7 +48,7 @@ Create a new file named `.env` in the root of the project. This file holds your 
 ```ini
 # --- Database Credentials ---
 # This host 'postgres' is the service name from docker-compose.yml
-POSTGRES_HOST=postgres
+POSTGRES_HOST=localhost
 POSTGRES_PORT=5432
 POSTGRES_DB=starterkit_db
 POSTGRES_USER=jenny
