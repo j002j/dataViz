@@ -1,0 +1,20 @@
+# --- .dockerignore ---
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Docker
+.dockerignore
+Dockerfile
+
+# Git
+.git/
+.gitignore
+
+# Config
+.env
+
+# Output
+cropped_people/
