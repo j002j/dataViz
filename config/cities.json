@@ -1,0 +1,92 @@
+[
+  {
+    "name": "New York",
+    "bbox": {
+      "west": -74.0472,
+      "south": 40.6795,
+      "east": -73.9712,
+      "north": 40.7920
+    }
+  },
+  {
+    "name": "Berlin",
+    "bbox": {
+      "west": 13.0668,
+      "south": 52.3271,
+      "east": 13.7813,
+      "north": 52.6847
+    }
+  },
+  {
+    "name": "Cologne",
+    "bbox": {
+      "west": 6.809,
+      "south": 50.83,
+      "east": 7.16,
+      "north": 51.085
+    }
+  },
+  {
+    "name": "Düsseldorf",
+    "bbox": {
+      "west": 6.69,
+      "south": 51.11,
+      "east": 6.94,
+      "north": 51.34
+    }
+  },
+  {
+    "name": "Seoul",
+    "bbox": {
+      "west": 126.7340,
+      "south": 37.4132,
+      "east": 127.2693,
+      "north": 37.7151
+    }
+  },
+  {
+    "name": "Tokyo (23 Wards)",
+    "bbox": {
+      "west": 139.555,
+      "south": 35.513,
+      "east": 139.923,
+      "north": 35.821
+    }
+  },
+  {
+    "name": "Beijing",
+    "bbox": {
+      "west": 115.3186,
+      "south": 39.3810,
+      "east": 117.5660,
+      "north": 41.1024
+    }
+  },
+  {
+    "name": "Sydney",
+    "bbox": {
+      "west": 151.10,
+      "south": -33.96,
+      "east": 151.30,
+      "north": -33.76
+    }
+  },
+  {
+    "name": "Santiago",
+    "bbox": {
+      "west": -70.853,
+      "south": -33.678,
+      "east": -70.403,
+      "north": -33.294
+    }
+  },
+  {
+    "name": "Sao Paulo",
+    "bbox": {
+      "west": -46.8842,
+      "south": -24.0176,
+      "east": -46.3609,
+      "north": -23.3448
+    }
+  }
+]

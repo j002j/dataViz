@@ -35,21 +35,16 @@ This repository contains a data pipeline that:
 
 -----
 
-## How to Run the Pipeline (Docker)
+## 🚀 How to Run the Pipeline (Docker)
 
 This is the recommended way to run the project.
 
-### 1\. Configuration
+### 1. Configuration
 
-Before you start, you **must** create a configuration file.
+Before you start, you must configure two files:
 
-1.  Create a new file named `.env` in the root of the project.
-2.  Copy the following content into your new `.env` file.
-3.  **Add your Mapillary Access Token** where it says `"YOUR_TOKEN_HERE"`.
-4.  (Optional) Change the `TARGET_BBOX` coordinates to a new area.
-
-<!-- end list -->
-
+**A) `.env` file**
+Create a new file named `.env` in the root of the project. This file holds your secret keys.
 ```ini
 # --- Database Credentials ---
 # This host 'postgres' is the service name from docker-compose.yml
@@ -61,12 +56,32 @@ POSTGRES_PASSWORD=postgres
 
 # --- Mapillary Credentials ---
 MAPILLARY_ACCESS_TOKEN="YOUR_TOKEN_HERE"
+```
 
-# --- Pipeline Config (Example: San Francisco) ---
-TARGET_BBOX_WEST=-122.4206
-TARGET_BBOX_SOUTH=37.7722
-TARGET_BBOX_EAST=-122.4106
-TARGET_BBOX_NORTH=37.7782
+**B) config/cities.json file**
+This file tells the pipeline which geographic areas to scan. You can add, remove, or edit any city in this list.
+
+```JSON
+[
+  {
+    "name": "New York",
+    "bbox": {
+      "west": -74.0472,
+      "south": 40.6795,
+      "east": -73.9712,
+      "north": 40.7920
+    }
+  },
+  {
+    "name": "Berlin",
+    "bbox": {
+      "west": 13.0668,
+      "south": 52.3271,
+      "east": 13.7813,
+      "north": 52.6847
+    }
+  }
+]
 ```
 
 ### 2\. Build and Run Services
@@ -81,7 +96,7 @@ Open your terminal in the project root and run these commands in order.
     ```
 
 2.  **(First Time) Initialize the database:**
-    This runs the `init_db.py` script once to create the original tables from your colleague's `db/starterkit.session.sql` file.
+    This runs the `init_db.py` script once to create the original tables from `db/starterkit.session.sql`.
 
     ```bash
     docker compose up --build db-init
@@ -90,11 +105,10 @@ Open your terminal in the project root and run these commands in order.
 3.  **Run the Mapillary Pipeline:**
     This is the main command. It will:
 
-      * Build the Python Docker image (installing `requirements.txt`).
-      * Connect to the database and create the `mapillary_detections` table (if it doesn't exist).
-      * Start fetching and processing images from Mapillary.
-      * Save cropped images to the `cropped_people/` folder.
-      * Save all metadata to the `mapillary_detections` table.
+      * Build the Python Docker image.
+      * Read the `config/cities.json` file.
+      * **Loop through every city** and run the full detection pipeline.
+      * Save results to the `mapillary_detections` table.
 
     <!-- end list -->
 
@@ -102,9 +116,8 @@ Open your terminal in the project root and run these commands in order.
     docker compose up --build mapillary-pipeline
     ```
 
-    You will see the pipeline's progress in your terminal.
+    You will see the pipeline's progress in your terminal as it processes each city one by one.
 
------
 
 ## 🔍 Inspect the Database (using VS Code)
 

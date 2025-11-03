@@ -1,5 +1,6 @@
 import os
 import sys
+import json  # Import the json library
 from ultralytics import YOLO
 from dotenv import load_dotenv
 
@@ -21,17 +22,19 @@ def run_pipeline():
         print("Error: MAPILLARY_ACCESS_TOKEN is not set in your .env file.")
         return
 
-    # Load BBOX from environment
+    # --- THIS IS THE NEW PART ---
+    # Load city bounding boxes from the new JSON config file
     try:
-        TARGET_BBOX = {
-            "west": float(os.getenv("TARGET_BBOX_WEST")),
-            "south": float(os.getenv("TARGET_BBOX_SOUTH")),
-            "east": float(os.getenv("TARGET_BBOX_EAST")),
-            "north": float(os.getenv("TARGET_BBOX_NORTH")),
-        }
+        with open('config/cities.json', 'r') as f:
+            cities_config = json.load(f)
+        if not cities_config:
+            print("Error: config/cities.json is empty or not found.")
+            return
+        print(f"Loaded {len(cities_config)} cities from config/cities.json")
     except Exception as e:
-        print(f"Error loading bounding box coordinates from .env file: {e}")
+        print(f"Error loading config/cities.json: {e}")
         return
+    # --- END NEW PART ---
 
     OUTPUT_DIR = "cropped_people"
     os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -46,18 +49,7 @@ def run_pipeline():
     # Ensure the table for our results exists
     create_detections_table(db_conn)
 
-    # --- Step 2: Get Image Info ---
-    image_list = mp.fetch_image_data(
-        MAPILLARY_ACCESS_TOKEN, 
-        TARGET_BBOX
-    )
-    
-    if not image_list:
-        print("Pipeline finished: No images to process.")
-        db_conn.close()
-        return
-        
-    # --- Step 3: Load YOLO Model ---
+    # --- Step 2: Load YOLO Model (do this once) ---
     print("\nLoading YOLOv8 model...")
     try:
         model = YOLO('yolov8n.pt') 
@@ -67,18 +59,38 @@ def run_pipeline():
         db_conn.close()
         return
 
-    # --- Step 4: Process Images & Save to DB ---
-    mp.process_images(
-        image_list, 
-        model, 
-        OUTPUT_DIR,
-        db_conn  # Pass the database connection
-    )
+    # --- Step 3: Loop through each city and run the pipeline ---
+    for city in cities_config:
+        city_name = city['name']
+        city_bbox = city['bbox']
+        
+        print(f"\n==================================================")
+        print(f"Processing city: {city_name}")
+        print(f"==================================================")
+
+        # Get Image Info for this city
+        image_list = mp.fetch_image_data(
+            MAPILLARY_ACCESS_TOKEN, 
+            city_bbox
+        )
+        
+        if not image_list:
+            print(f"No images found for {city_name}. Skipping.")
+            continue
+            
+        # Process Images & Save to DB for this city
+        mp.process_images(
+            image_list, 
+            model, 
+            OUTPUT_DIR,
+            db_conn  # Pass the database connection
+        )
     
-    # --- Step 5: Clean up ---
+    # --- Step 4: Clean up ---
     db_conn.close()
+    print("\n==================================================")
     print("Database connection closed.")
-    print("\nPipeline finished.")
+    print("All cities processed. Pipeline finished.")
 
 if __name__ == "__main__":
     run_pipeline()
