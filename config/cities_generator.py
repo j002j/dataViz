@@ -8,8 +8,8 @@ Nominatim API to find the bounding box for each.
 import requests
 import json
 import time
-import csv  # <-- ADDED
-import os   # <-- ADDED
+import csv
+import os
 
 # This is a mandatory requirement from the Nominatim API.
 # Failure to set a unique User-Agent may result in your IP being banned.
@@ -20,7 +20,6 @@ def get_city_bbox(city_name, headers):
     """
     Fetches the bounding box for a single city from Nominatim,
     prioritizing results explicitly typed as 'city'.
-    (This is the improved function from our last conversation)
     """
     # Get up to 5 results to find the best match
     url = f"https://nominatim.openstreetmap.org/search?q={requests.utils.quote(city_name)}&format=json&limit=5"
@@ -34,22 +33,26 @@ def get_city_bbox(city_name, headers):
             print(f"WARNING: No results found for '{city_name}'")
             return None
 
-        # Try to find the best match (a 'city')
+        # --- Logic: Try to find a 'city' type match ---
         best_match = None
         for result in data:
+            # We want a result that is a 'place' (like a city/town)
+            # and specifically type 'city', and has a bounding box.
             if (result.get('class') == 'place' and 
                 result.get('type') == 'city' and 
                 result.get('boundingbox')):
                 best_match = result
                 break # Found the best possible match
 
+        # If no 'city' type was found, fall back to the first result
         if not best_match:
             print(f"  -> WARNING: No 'city' type match for '{city_name}'. Falling back to first result.")
-            best_match = data[0]
-        
-        if not best_match.get('boundingbox'):
-            print(f"WARNING: Selected result for '{city_name}' has no bounding box.")
-            return None
+            if data and data[0].get('boundingbox'):
+                best_match = data[0] # Use the first result
+            else:
+                print(f"WARNING: No usable results with a bounding box for '{city_name}'. Skipping.")
+                return None
+        # --- END LOGIC ---
             
         bbox_osm = best_match['boundingbox'] # [south, north, west, east]
         
@@ -128,8 +131,8 @@ def main():
         return
 
     # --- NEW DYNAMIC LIST GENERATION ---
-    MIN_POPULATION = 200000
-    INPUT_CSV = "worldcities.csv" # Assumes file is in root
+    MIN_POPULATION = 250000
+    INPUT_CSV = "assets/worldcities.csv" # Assumes file is in root
     
     print(f"Loading cities from '{INPUT_CSV}' with population >= {MIN_POPULATION}...")
     city_list = load_cities_from_csv(INPUT_CSV, MIN_POPULATION)
@@ -145,7 +148,7 @@ def main():
 
     headers = {'User-Agent': USER_AGENT}
     all_city_data = []
-    output_filename = "cities_gt_400k.json" # New output file name
+    output_filename = "config/cities.json" # New output file name
 
     print(f"Starting geocoding for {len(city_list)} cities...")
     print(f"Results will be saved to '{output_filename}'")
