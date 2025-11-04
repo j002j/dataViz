@@ -1,7 +1,8 @@
 import os
 import psycopg2
-import json # <-- ADD THIS IMPORT
+import json
 from psycopg2 import sql
+from psycopg2 import extras # <-- ADD THIS
 
 def get_db_connection():
     """Establishes and returns a psycopg2 connection object."""
@@ -26,7 +27,10 @@ def get_db_connection():
         return None
 
 def create_detections_table(conn):
-    """Creates the mapillary_detections table if it doesn't exist."""
+    """
+    Creates the mapillary_detections table if it doesn't exist,
+    now with a foreign key link to the cities table.
+    """
     create_table_query = """
     CREATE TABLE IF NOT EXISTS mapillary_detections (
         id SERIAL PRIMARY KEY,
@@ -35,7 +39,10 @@ def create_detections_table(conn):
         captured_at TIMESTAMPTZ,
         location JSONB,
         bounding_box_original JSONB,
-        created_at TIMESTAMPTZ DEFAULT NOW()
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        
+        -- NEW: Link to the city this detection belongs to
+        city_id INTEGER REFERENCES cities(id) ON DELETE SET NULL
     );
     """
     try:
@@ -47,7 +54,7 @@ def create_detections_table(conn):
         print(f"Error creating table: {e}")
         conn.rollback()
 
-# --- NEW FUNCTION 1 ---
+# --- NEW FUNCTION 1 (from your file) ---
 def create_cities_table(conn):
     """Creates the cities table to track scanned status."""
     create_table_query = """
@@ -68,7 +75,7 @@ def create_cities_table(conn):
         print(f"Error creating 'cities' table: {e}")
         conn.rollback()
 
-# --- NEW FUNCTION 2 ---
+# --- NEW FUNCTION 2 (from your file) ---
 def check_or_create_city(conn, city_name, city_bbox):
     """
     Checks if a city exists in the DB.
@@ -107,7 +114,7 @@ def check_or_create_city(conn, city_name, city_bbox):
         # Return None, None to signal an error
         return None, None
 
-# --- NEW FUNCTION 3 ---
+# --- NEW FUNCTION 3 (from your file) ---
 def mark_city_as_scanned(conn, city_id):
     """Updates a city's 'scanned' status to TRUE."""
     try:
@@ -118,3 +125,25 @@ def mark_city_as_scanned(conn, city_id):
     except Exception as e:
         print(f"Error marking city {city_id} as scanned: {e}")
         conn.rollback()
+
+# --- NEW FUNCTION 4 ---
+def get_unscanned_cities(conn):
+    """
+    Queries the database for all cities that have not been scanned.
+    Returns a list of dictionaries.
+    """
+    cities_to_scan = []
+    try:
+        # RealDictCursor makes the result a list of dicts
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+            cursor.execute("SELECT id, name, bbox FROM cities WHERE scanned = FALSE")
+            results = cursor.fetchall()
+            if results:
+                # Convert RealDictRow to plain dict
+                cities_to_scan = [dict(row) for row in results] 
+        
+        print(f"Found {len(cities_to_scan)} unscanned cities in the database.")
+        return cities_to_scan
+    except Exception as e:
+        print(f"Error fetching unscanned cities: {e}")
+        return []

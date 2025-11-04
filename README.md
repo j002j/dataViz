@@ -22,29 +22,15 @@ This repository contains a data pipeline that:
   * `src/db/`: Contains database utilities and the initial schema setup.
   * `cropped_people/`: (Git-ignored) Where cropped images are saved.
 
------
-
-## Prerequisites
-
-  * Docker (installed and running)
-  * Python 3.x
-  * VS Code (Recommended)
-  * **VS Code Extensions:**
-      * SQLTools
-      * SQLTools PostgreSQL Driver
-
------
 
 ## 🚀 How to Run the Pipeline (Docker)
 
 This is the recommended way to run the project.
 
-### 1. Configuration
+### Step 1: Configure Environment (.env)
 
-Before you start, you must configure two files:
+Before you start, create a file named `.env` in the root of the project. This file holds your secret keys.
 
-**A) `.env` file**
-Create a new file named `.env` in the root of the project. This file holds your secret keys.
 ```ini
 # --- Database Credentials ---
 # This host 'postgres' is the service name from docker-compose.yml
@@ -58,10 +44,32 @@ POSTGRES_PASSWORD=postgres
 MAPILLARY_ACCESS_TOKEN="YOUR_TOKEN_HERE"
 ```
 
-**B) config/cities.json file**
-This file tells the pipeline which geographic areas to scan. You can add, remove, or edit any city in this list.
+### Step 2: Generate City List (config/cities.json)
 
-```JSON
+The pipeline needs a `config/cities.json` file to know which geographic areas to scan. You can generate a large list automatically or create a small custom list manually.
+
+#### Option A (Recommended): Generate from World Cities List
+
+This project includes a helper script (`cities_generator.py`) that uses a free world cities database to find all cities over a certain population.
+
+1.  **Download City Data:** Download the "Basic" (free) database from [**Simple Maps World Cities**](https://simplemaps.com/data/world-cities).
+2.  **Copy CSV:** Unzip the file and place the `worldcities.csv` file in the root of your project.
+3.  **(Optional) Adjust Population:** Open `cities_generator.py` and change the `MIN_POPULATION` variable if desired (default is `400000`).
+4.  **Run the Script:** Run the generator script in your local Python environment. This will create the `config/cities.json` file for you.
+    ```bash
+    # Install Python requirements locally first
+    pip install -r requirements.txt
+
+    # Run the script
+    python cities_generator.py
+    ```
+5.  **(Optional) Manual Fix:** The script may produce a bad bounding box for a few tricky cities (like Tokyo). If this happens, open `config/cities.json` and manually correct the `bbox` coordinates for that one entry.
+
+#### Option B (Manual): Create a Custom List
+
+Manually create a `config/cities.json` file. This is useful for testing a few small, specific areas.
+
+```json
 [
   {
     "name": "New York",
@@ -84,9 +92,11 @@ This file tells the pipeline which geographic areas to scan. You can add, remove
 ]
 ```
 
-### 2\. Build and Run Services
+-----
 
-Open your terminal in the project root and run these commands in order.
+### Step 3: Build and Run Services
+
+With your `.env` and `config/cities.json` files ready, open your terminal in the project root and run these commands in order.
 
 1.  **Start the database:**
     This starts the PostgreSQL server in the background.
@@ -96,7 +106,7 @@ Open your terminal in the project root and run these commands in order.
     ```
 
 2.  **(First Time) Initialize the database:**
-    This runs the `init_db.py` script once to create the original tables from `db/starterkit.session.sql`.
+    This runs the `init_db.py` script once to create the database tables.
 
     ```bash
     docker compose up --build db-init
@@ -108,7 +118,7 @@ Open your terminal in the project root and run these commands in order.
       * Build the Python Docker image.
       * Read the `config/cities.json` file.
       * **Loop through every city** and run the full detection pipeline.
-      * Save results to the `mapillary_detections` table.
+      * Save results to the `mapillary_detections` and `cities` tables.
 
     <!-- end list -->
 
@@ -116,10 +126,11 @@ Open your terminal in the project root and run these commands in order.
     docker compose up --build mapillary-pipeline
     ```
 
-    You will see the pipeline's progress in your terminal as it processes each city one by one.
+    You will see the pipeline's progress in your terminal as it processes each city. If you stop and restart it, it will skip cities that are already marked as scanned in the database.
 
+-----
 
-## 🔍 Inspect the Database (using VS Code)
+## 🔍 Step 4: Inspect the Database (using VS Code)
 
 After the pipeline has run, you can connect directly to the database to see the results.
 
@@ -127,9 +138,9 @@ After the pipeline has run, you can connect directly to the database to see the 
 
 2.  Select "PostgreSQL" as the connection type.
 
-3.  Use the following settings (since the DB is running in Docker but exposed to your host machine, `localhost` is correct here):
+3.  Use the following settings (since the DB is running in Docker but exposed to your host machine, `localhost` is correct):
 
-      * **Connection Name:** My Docker DB (or any name)
+      * **Connection Name:** My Docker DB
       * **Host:** `localhost`
       * **Port:** `5432` (or your `POSTGRES_PORT` from `.env`)
       * **Database:** `starterkit_db`
@@ -145,8 +156,8 @@ After the pipeline has run, you can connect directly to the database to see the 
     SELECT * FROM mapillary_detections
     ORDER BY created_at DESC
     LIMIT 10;
+
+    -- Check which cities are finished
+    SELECT * FROM cities
+    WHERE scanned = TRUE;
     ```
-
-## Additional tools:
-
-To generate a JSON file with the city bounding boxes `config > cities_generator.py` can be run once. This script uses OpenStreetMaps API to gather the coordinates for the top 50 most populous cities for each continent.

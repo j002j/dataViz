@@ -3,11 +3,13 @@ import requests
 import cv2
 import json
 import uuid
-import time  # <-- ADDED
-import numpy as np  # <-- ADDED
+import time 
+import numpy as np
 import mapillary.interface as mly
 from ultralytics import YOLO
 from psycopg2 import sql, extras
+
+# --- (generate_bbox_tiles and fetch_image_data functions are unchanged) ---
 
 def generate_bbox_tiles(bbox_dict, step=0.1):
     """
@@ -29,13 +31,11 @@ def generate_bbox_tiles(bbox_dict, step=0.1):
             max_lon_tile = min_lon_tile + step
             max_lat_tile = min_lat_tile + step
             
-            # Ensure tile doesn't go outside the original max bounds
             if max_lon_tile > max_lon:
                 max_lon_tile = max_lon
             if max_lat_tile > max_lat:
                 max_lat_tile = max_lat
             
-            # Return in the same dict format
             yield {
                 "west": min_lon_tile,
                 "south": min_lat_tile,
@@ -51,12 +51,10 @@ def fetch_image_data(token, bbox_dict):
     print("Connecting to Mapillary API...")
     mly.set_access_token(token)
     
-    # --- NEW TILING LOGIC ---
-    # Generate the list of small tiles
     tiles = list(generate_bbox_tiles(bbox_dict, step=0.1))
     print(f"Divided large bounding box into {len(tiles)} tiles for querying.")
     
-    all_features = {} # Use a dict to store unique features by ID
+    all_features = {} 
     search_url = "https://graph.mapillary.com/images"
     
     for i, tile_bbox_dict in enumerate(tiles):
@@ -72,29 +70,24 @@ def fetch_image_data(token, bbox_dict):
 
         try:
             response = requests.get(search_url, params=params)
-            response.raise_for_status() # Raise HTTPError for bad responses (4xx or 5xx)
+            response.raise_for_status() 
             data = response.json()
             
             features_in_tile = data.get('data', [])
             if features_in_tile:
                 print(f"    -> Found {len(features_in_tile)} images.")
-                # Add to our dict, automatically handling duplicates from overlapping tiles
                 for feature in features_in_tile:
                     all_features[feature['id']] = feature
             
-            # IMPORTANT: Be polite to the API, add a small delay
-            time.sleep(0.2) # 200ms delay
+            time.sleep(0.2) 
 
         except requests.exceptions.RequestException as e:
-            # Catch errors but continue the loop
             print(f"    -> WARNING: Error on tile {i+1}: {e}. Skipping this tile.")
-            continue # Skip this tile, move to the next
+            continue 
         except Exception as e:
             print(f"    -> WARNING: An unexpected error occurred on tile {i+1}: {e}. Skipping tile.")
             continue
-    # --- END NEW TILING LOGIC ---
 
-    # Now, process the combined, unique features
     unique_features_list = list(all_features.values())
 
     if not unique_features_list:
@@ -104,7 +97,6 @@ def fetch_image_data(token, bbox_dict):
     print(f"\nFound {len(unique_features_list)} unique images total. Fetching thumbnail URLs...")
     image_list = []
 
-    # This part of the function (thumbnail fetching) is the same as before
     for i, feature in enumerate(unique_features_list):
         image_id = feature['id']
         location = feature['geometry']['coordinates']
@@ -113,7 +105,7 @@ def fetch_image_data(token, bbox_dict):
         if captured_at:
             captured_at_seconds = float(captured_at) / 1000.0
         else:
-            captured_at_seconds = None # Handle missing capture_at
+            captured_at_seconds = None 
         
         try:
             image_url = mly.image_thumbnail(image_id, resolution=2048)
@@ -147,24 +139,25 @@ def download_image(url, path):
 
 def insert_detection(conn, data):
     """Inserts a single detection record into the database."""
+    # UPDATED to include city_id
     insert_query = """
     INSERT INTO mapillary_detections
-        (cropped_file, original_image_id, captured_at, location, bounding_box_original)
+        (cropped_file, original_image_id, captured_at, location, bounding_box_original, city_id)
     VALUES
-        (%(cropped_file)s, %(original_image_id)s, TO_TIMESTAMP(%(captured_at)s), %(location)s, %(bounding_box)s)
+        (%(cropped_file)s, %(original_image_id)s, TO_TIMESTAMP(%(captured_at)s), %(location)s, %(bounding_box)s, %(city_id)s)
     """
     try:
         with conn.cursor() as cursor:
-            # Use psycopg2's 'execute' for safe parameter substitution
             cursor.execute(insert_query, data)
             conn.commit()
     except Exception as e:
         print(f"  -> Error inserting detection to DB: {e}")
         conn.rollback()
 
-def process_images(image_list, model, output_dir, db_conn):
+def process_images(image_list, model, output_dir, db_conn, city_id):
     """
     Downloads, processes, saves crops, and writes metadata to the database.
+    UPDATED to accept city_id.
     """
     temp_image_path = os.path.join(output_dir, "temp_image.jpg")
     
@@ -215,7 +208,8 @@ def process_images(image_list, model, output_dir, db_conn):
                     'longitude': info['location'][0],
                     'latitude': info['location'][1]
                 }),
-                "bounding_box": json.dumps([x1, y1, x2, y2])
+                "bounding_box": json.dumps([x1, y1, x2, y2]),
+                "city_id": city_id  # <-- ADDED
             }
             
             # Insert this detection into the database

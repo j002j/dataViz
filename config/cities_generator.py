@@ -1,5 +1,5 @@
 """
-This script fetches bounding box coordinates for a list of cities.
+This script populates the 'cities' table in the database.
 It dynamically generates the city list by filtering a CSV
 of world cities by population, then uses the OpenStreetMap
 Nominatim API to find the bounding box for each.
@@ -10,9 +10,14 @@ import json
 import time
 import csv
 import os
+import sys
+from dotenv import load_dotenv
+
+# Add src directory to the Python path to allow db_utils import
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from src.db.db_utils import get_db_connection, check_or_create_city, create_cities_table
 
 # This is a mandatory requirement from the Nominatim API.
-# Failure to set a unique User-Agent may result in your IP being banned.
 USER_AGENT = 'CityBoxFinder/1.0 (anton.rabanus@study.hs-duesseldorf.de)'
 # ---------------------
 
@@ -20,8 +25,8 @@ def get_city_bbox(city_name, headers):
     """
     Fetches the bounding box for a single city from Nominatim,
     prioritizing results explicitly typed as 'city'.
+    (This is the robust function from our previous conversation)
     """
-    # Get up to 5 results to find the best match
     url = f"https://nominatim.openstreetmap.org/search?q={requests.utils.quote(city_name)}&format=json&limit=5"
     
     try:
@@ -33,26 +38,21 @@ def get_city_bbox(city_name, headers):
             print(f"WARNING: No results found for '{city_name}'")
             return None
 
-        # --- Logic: Try to find a 'city' type match ---
         best_match = None
         for result in data:
-            # We want a result that is a 'place' (like a city/town)
-            # and specifically type 'city', and has a bounding box.
             if (result.get('class') == 'place' and 
                 result.get('type') == 'city' and 
                 result.get('boundingbox')):
                 best_match = result
-                break # Found the best possible match
+                break 
 
-        # If no 'city' type was found, fall back to the first result
         if not best_match:
             print(f"  -> WARNING: No 'city' type match for '{city_name}'. Falling back to first result.")
             if data and data[0].get('boundingbox'):
-                best_match = data[0] # Use the first result
+                best_match = data[0]
             else:
                 print(f"WARNING: No usable results with a bounding box for '{city_name}'. Skipping.")
                 return None
-        # --- END LOGIC ---
             
         bbox_osm = best_match['boundingbox'] # [south, north, west, east]
         
@@ -80,8 +80,6 @@ def load_cities_from_csv(csv_path, min_population):
     """
     Loads cities from the Simple Maps worldcities.csv file
     and filters them by population.
-    
-    Returns a list of search strings (e.g., "Tokyo, Japan").
     """
     city_list = []
     print(f"Reading from {csv_path}...")
@@ -90,21 +88,19 @@ def load_cities_from_csv(csv_path, min_population):
             reader = csv.DictReader(f)
             for row in reader:
                 try:
-                    # Use 'population' field, default to 0
                     population_str = row.get('population', '0')
                     if not population_str:
-                        continue # Skip if population is empty
+                        continue 
                         
                     population = float(population_str)
                     
                     if population >= min_population:
-                        # Use ascii name for simpler/safer searching
                         city_name = row['city_ascii'] 
                         country_name = row['country']
                         search_term = f"{city_name}, {country_name}"
                         city_list.append(search_term)
                 except (ValueError, TypeError):
-                    continue # Skip rows with bad population data
+                    continue 
     except FileNotFoundError:
         print("="*50)
         print(f"ERROR: Could not find the file '{csv_path}'.")
@@ -121,37 +117,48 @@ def load_cities_from_csv(csv_path, min_population):
 
 def main():
     """
-    Main function to process the list of cities and save to JSON.
+    Main function to populate the 'cities' table in the database.
     """
     if USER_AGENT == 'MyCityBoxFinder/1.0 (your-email@example.com)':
         print("="*50)
         print("ERROR: Please edit the 'USER_AGENT' variable in this script")
-        print("       before running. See the comments for details.")
         print("="*50)
         return
+        
+    # --- Load .env variables for database connection ---
+    load_dotenv()
 
-    # --- NEW DYNAMIC LIST GENERATION ---
-    MIN_POPULATION = 250000
-    INPUT_CSV = "assets/worldcities.csv" # Assumes file is in root
+    # --- Connect to Database ---
+    print("Initializing database connection...")
+    db_conn = get_db_connection()
+    if db_conn is None:
+        print("Failed to connect to database. Exiting.")
+        return
+        
+    # Ensure 'cities' table exists
+    create_cities_table(db_conn)
+
+    # --- Load Cities from CSV ---
+    MIN_POPULATION = 400000
+    INPUT_CSV = "worldcities.csv"
     
     print(f"Loading cities from '{INPUT_CSV}' with population >= {MIN_POPULATION}...")
     city_list = load_cities_from_csv(INPUT_CSV, MIN_POPULATION)
     
     if city_list is None:
         print("Exiting due to error.")
+        db_conn.close()
         return
         
-    # De-duplicate the list (e.g., if CSV has multiple entries)
     city_list = sorted(list(set(city_list)))
     print(f"Found {len(city_list)} unique cities matching criteria.")
-    # --- END NEW DYNAMIC LIST ---
 
+    # --- Process and Save Cities to DB ---
     headers = {'User-Agent': USER_AGENT}
-    all_city_data = []
-    output_filename = "config/cities.json" # New output file name
+    cities_added = 0
+    cities_skipped = 0
 
-    print(f"Starting geocoding for {len(city_list)} cities...")
-    print(f"Results will be saved to '{output_filename}'")
+    print(f"Starting geocoding and database insertion for {len(city_list)} cities...")
     
     for i, city in enumerate(city_list):
         print(f"\n({i + 1}/{len(city_list)}) Processing: '{city}'")
@@ -159,21 +166,29 @@ def main():
         city_data = get_city_bbox(city, headers)
         
         if city_data:
-            all_city_data.append(city_data)
+            # --- SAVE TO DATABASE ---
+            # This function inserts the city if it doesn't exist.
+            city_id, is_scanned = check_or_create_city(
+                db_conn, 
+                city_data['name'], 
+                city_data['bbox']
+            )
+            if city_id and not is_scanned:
+                cities_added += 1
+            elif is_scanned:
+                print("  -> City already exists and is marked as scanned. Skipping.")
+                cities_skipped += 1
+            else:
+                print("  -> Failed to add city to database.")
         
         # --- IMPORTANT: RATE LIMIT ---
-        # Nominatim policy requires a 1-second delay between requests.
-        # Do not remove or lower this value!
         time.sleep(1)
         # -----------------------------
 
-    # Write the final list to a JSON file
-    try:
-        with open(output_filename, 'w', encoding='utf-8') as f:
-            json.dump(all_city_data, f, indent=2, ensure_ascii=False)
-        print(f"\nProcess complete. All data saved to '{output_filename}'")
-    except IOError as e:
-        print(f"ERROR: Could not write to file. {e}")
+    db_conn.close()
+    print("\n==================================================")
+    print("Database connection closed.")
+    print(f"Process complete. Added {cities_added} new cities. Skipped {cities_skipped}.")
 
 if __name__ == "__main__":
     main()
