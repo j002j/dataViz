@@ -9,6 +9,7 @@ ultralytics
 opencv-python-headless
 requests
 numpy
+pandas
 
 # Database & Config
 psycopg2-binary

@@ -1,11 +1,15 @@
 """
-This script fetches bounding box coordinates for a list of cities
-using the free OpenStreetMap Nominatim API.
+This script fetches bounding box coordinates for a list of cities.
+It dynamically generates the city list by filtering a CSV
+of world cities by population, then uses the OpenStreetMap
+Nominatim API to find the bounding box for each.
 """
 
 import requests
 import json
 import time
+import csv  # <-- ADDED
+import os   # <-- ADDED
 
 # This is a mandatory requirement from the Nominatim API.
 # Failure to set a unique User-Agent may result in your IP being banned.
@@ -14,50 +18,103 @@ USER_AGENT = 'CityBoxFinder/1.0 (anton.rabanus@study.hs-duesseldorf.de)'
 
 def get_city_bbox(city_name, headers):
     """
-    Fetches the bounding box for a single city from Nominatim.
+    Fetches the bounding box for a single city from Nominatim,
+    prioritizing results explicitly typed as 'city'.
+    (This is the improved function from our last conversation)
     """
-    # Construct the API URL
-    url = f"https://nominatim.openstreetmap.org/search?q={requests.utils.quote(city_name)}&format=json&limit=1"
+    # Get up to 5 results to find the best match
+    url = f"https://nominatim.openstreetmap.org/search?q={requests.utils.quote(city_name)}&format=json&limit=5"
     
     try:
-        # Make the request with the required User-Agent
         response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+        data = response.json()
         
-        # Check for successful response
-        if response.status_code == 200:
-            data = response.json()
-            
-            # Check if we got any results and if the result has a boundingbox
-            if data and data[0].get('boundingbox'):
-                bbox_osm = data[0]['boundingbox'] # Nominatim format: [south, north, west, east]
-                
-                # Format to match the user's requested JSON structure
-                formatted_bbox = {
-                    "west": float(bbox_osm[2]),
-                    "south": float(bbox_osm[0]),
-                    "east": float(bbox_osm[3]),
-                    "north": float(bbox_osm[1])
-                }
-                
-                # Use the full name from the API for clarity
-                city_data = {
-                    "name": data[0]['display_name'],
-                    "search_term": city_name,
-                    "bbox": formatted_bbox
-                }
-                
-                print(f"SUCCESS: Found '{data[0]['display_name']}'")
-                return city_data
-            else:
-                print(f"WARNING: No results found for '{city_name}'")
-                return None
-        else:
-            print(f"ERROR: HTTP {response.status_code} for '{city_name}'")
+        if not data:
+            print(f"WARNING: No results found for '{city_name}'")
             return None
+
+        # Try to find the best match (a 'city')
+        best_match = None
+        for result in data:
+            if (result.get('class') == 'place' and 
+                result.get('type') == 'city' and 
+                result.get('boundingbox')):
+                best_match = result
+                break # Found the best possible match
+
+        if not best_match:
+            print(f"  -> WARNING: No 'city' type match for '{city_name}'. Falling back to first result.")
+            best_match = data[0]
+        
+        if not best_match.get('boundingbox'):
+            print(f"WARNING: Selected result for '{city_name}' has no bounding box.")
+            return None
+            
+        bbox_osm = best_match['boundingbox'] # [south, north, west, east]
+        
+        formatted_bbox = {
+            "west": float(bbox_osm[2]),
+            "south": float(bbox_osm[0]),
+            "east": float(bbox_osm[3]),
+            "north": float(bbox_osm[1])
+        }
+        
+        city_data = {
+            "name": best_match['display_name'],
+            "search_term": city_name,
+            "bbox": formatted_bbox
+        }
+        
+        print(f"SUCCESS: Found '{best_match['display_name']}' (Type: {best_match.get('type')})")
+        return city_data
             
     except requests.RequestException as e:
         print(f"EXCEPTION: {e} for '{city_name}'")
         return None
+
+def load_cities_from_csv(csv_path, min_population):
+    """
+    Loads cities from the Simple Maps worldcities.csv file
+    and filters them by population.
+    
+    Returns a list of search strings (e.g., "Tokyo, Japan").
+    """
+    city_list = []
+    print(f"Reading from {csv_path}...")
+    try:
+        with open(csv_path, 'r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                try:
+                    # Use 'population' field, default to 0
+                    population_str = row.get('population', '0')
+                    if not population_str:
+                        continue # Skip if population is empty
+                        
+                    population = float(population_str)
+                    
+                    if population >= min_population:
+                        # Use ascii name for simpler/safer searching
+                        city_name = row['city_ascii'] 
+                        country_name = row['country']
+                        search_term = f"{city_name}, {country_name}"
+                        city_list.append(search_term)
+                except (ValueError, TypeError):
+                    continue # Skip rows with bad population data
+    except FileNotFoundError:
+        print("="*50)
+        print(f"ERROR: Could not find the file '{csv_path}'.")
+        print("Please download the 'Basic' database from:")
+        print("https://simplemaps.com/data/world-cities")
+        print("And place 'worldcities.csv' in your project root.")
+        print("="*50)
+        return None
+    except Exception as e:
+        print(f"Error reading CSV: {e}")
+        return None
+        
+    return city_list
 
 def main():
     """
@@ -70,323 +127,25 @@ def main():
         print("="*50)
         return
 
-    # --- INPUT ---
-    # Paste your list of 300 cities here.
-    # I've added a small sample from your "Africa" list to get you started.
-    city_list = [
-        # Africa
-        "Lagos, Nigeria",
-        "Cairo, Egypt",
-        "Kinshasa, DR Congo",
-        "Johannesburg, South Africa",
-        "Luanda, Angola",
-        "Khartoum, Sudan",
-        "Abidjan, Côte d'Ivoire",
-        "Nairobi, Kenya",
-        "Accra, Ghana",
-        "Dar es Salaam, Tanzania",
-        "Alexandria, Egypt",
-        "Bamako, Mali",
-        "Kano, Nigeria",
-        "Cape Town, South Africa",
-        "Addis Ababa, Ethiopia",
-        "Giza, Egypt",
-        "Casablanca, Morocco",
-        "Algiers, Algeria",
-        "Kampala, Uganda",
-        "Dakar, Senegal",
-        "Ekurhuleni, South Africa",
-        "Yaoundé, Cameroon",
-        "Durban, South Africa",
-        "Douala, Cameroon",
-        "Ouagadougou, Burkina Faso",
-        "Ibadan, Nigeria",
-        "Antananarivo, Madagascar",
-        "Abuja, Nigeria",
-        "Lusaka, Zambia",
-        "Conakry, Guinea",
-        "Kumasi, Ghana",
-        "Lubumbashi, DR Congo",
-        "Omdurman, Sudan",
-        "Pretoria, South Africa",
-        "Tunis, Tunisia",
-        "Harare, Zimbabwe",
-        "Lomé, Togo",
-        "Maputo, Mozambique",
-        "Mbuji-Mayi, DR Congo",
-        "Brazzaville, Republic of the Congo",
-        "Port Harcourt, Nigeria",
-        "Mogadishu, Somalia",
-        "Cotonou, Benin",
-        "Rabat, Morocco",
-        "Kaduna, Nigeria",
-        "Kigali, Rwanda",
-        "N'Djamena, Chad",
-        "Monrovia, Liberia",
-        "Tripoli, Libya",
-        "Matola, Mozambique",
-        # Asia
-        "Tokyo, Japan",
-        "Delhi, India",
-        "Shanghai, China",
-        "Mumbai, India",
-        "Beijing, China",
-        "Dhaka, Bangladesh",
-        "Osaka, Japan",
-        "Karachi, Pakistan",
-        "Chongqing, China",
-        "Kolkata, India",
-        "Manila, Philippines",
-        "Cairo, Egypt (transcontinental)",
-        "Guangzhou, China",
-        "Shenzhen, China",
-        "Jakarta, Indonesia",
-        "Seoul, South Korea",
-        "Chengdu, China",
-        "Tianjin, China",
-        "Bangalore, India",
-        "Nanjing, China",
-        "Lahore, Pakistan",
-        "Ho Chi Minh City, Vietnam",
-        "Chennai, India",
-        "Wuhan, China",
-        "Bangkok, Thailand",
-        "Hyderabad, India",
-        "Hong Kong, China",
-        "Tehran, Iran",
-        "Xi'an, China",
-        "Ahmedabad, India",
-        "Kuala Lumpur, Malaysia",
-        "Singapore, Singapore",
-        "Suzhou, China",
-        "Hangzhou, China",
-        "Riyadh, Saudi Arabia",
-        "Harbin, China",
-        "Baghdad, Iraq",
-        "Pune, India",
-        "Qingdao, China",
-        "Dalian, China",
-        "Dongguan, China",
-        "Surat, India",
-        "Yangon, Myanmar",
-        "Shenyang, China",
-        "Foshan, China",
-        "Zhengzhou, China",
-        "Shantou, China",
-        "Changsha, China",
-        "Urumqi, China",
-        "Kunming, China",
-        # Europe
-        "Istanbul, Turkey (transcontinental)",
-        "Moscow, Russia",
-        "London, United Kingdom",
-        "Saint Petersburg, Russia",
-        "Berlin, Germany",
-        "Madrid, Spain",
-        "Kyiv, Ukraine",
-        "Rome, Italy",
-        "Paris, France",
-        "Bucharest, Romania",
-        "Minsk, Belarus",
-        "Vienna, Austria",
-        "Hamburg, Germany",
-        "Warsaw, Poland",
-        "Budapest, Hungary",
-        "Barcelona, Spain",
-        "Munich, Germany",
-        "Kharkiv, Ukraine",
-        "Milan, Italy",
-        "Belgrade, Serbia",
-        "Prague, Czechia",
-        "Kazan, Russia",
-        "Sofia, Bulgaria",
-        "Nizhny Novgorod, Russia",
-        "Yekaterinburg, Russia",
-        "Samara, Russia",
-        "Odesa, Ukraine",
-        "Birmingham, United Kingdom",
-        "Ufa, Russia",
-        "Rostov-on-Don, Russia",
-        "Cologne, Germany",
-        "Voronezh, Russia",
-        "Perm, Russia",
-        "Volgograd, Russia",
-        "Dnipro, Ukraine",
-        "Naples, Italy",
-        "Krasnoyarsk, Russia",
-        "Turin, Italy",
-        "Saratov, Russia",
-        "Marseille, France",
-        "Zagreb, Croatia",
-        "Valencia, Spain",
-        "Łódź, Poland",
-        "Kraków, Poland",
-        "Amsterdam, Netherlands",
-        "Athens, Greece",
-        "Seville, Spain",
-        "Frankfurt, Germany",
-        "Krasnodar, Russia",
-        "Zaragoza, Spain",
-        # North America
-        "Mexico City, Mexico",
-        "New York City, USA",
-        "Los Angeles, USA",
-        "Toronto, Canada",
-        "Chicago, USA",
-        "Houston, USA",
-        "Havana, Cuba",
-        "Montreal, Canada",
-        "Ecatepec de Morelos, Mexico",
-        "Phoenix, USA",
-        "Philadelphia, USA",
-        "San Antonio, USA",
-        "Tijuana, Mexico",
-        "San Diego, USA",
-        "León, Mexico",
-        "Dallas, USA",
-        "Puebla, Mexico",
-        "Juárez, Mexico",
-        "Guatemala City, Guatemala",
-        "Guadalajara, Mexico",
-        "Zapopan, Mexico",
-        "Austin, USA",
-        "Calgary, Canada",
-        "San Jose, USA",
-        "Monterrey, Mexico",
-        "Jacksonville, USA",
-        "Fort Worth, USA",
-        "Columbus, USA",
-        "Charlotte, USA",
-        "Nezahualcóyotl, Mexico",
-        "Indianapolis, USA",
-        "Santo Domingo, Dominican Republic",
-        "San Francisco, USA",
-        "Seattle, USA",
-        "Denver, USA",
-        "Washington, D.C., USA",
-        "Boston, USA",
-        "El Paso, USA",
-        "Nashville, USA",
-        "Detroit, USA",
-        "Edmonton, Canada",
-        "Oklahoma City, USA",
-        "Ottawa, Canada",
-        "Portland, USA",
-        "Las Vegas, USA",
-        "Memphis, USA",
-        "Louisville, USA",
-        "Baltimore, USA",
-        "Milwaukee, USA",
-        "Albuquerque, USA",
-        # South America
-        "São Paulo, Brazil",
-        "Lima, Peru",
-        "Bogotá, Colombia",
-        "Rio de Janeiro, Brazil",
-        "Santiago, Chile",
-        "Buenos Aires, Argentina",
-        "Caracas, Venezuela",
-        "Brasília, Brazil",
-        "Salvador, Brazil",
-        "Fortaleza, Brazil",
-        "Belo Horizonte, Brazil",
-        "Medellín, Colombia",
-        "Manaus, Brazil",
-        "Curitiba, Brazil",
-        "Guayaquil, Ecuador",
-        "Recife, Brazil",
-        "Cali, Colombia",
-        "Santa Cruz de la Sierra, Bolivia",
-        "Porto Alegre, Brazil",
-        "Goiânia, Brazil",
-        "Belém, Brazil",
-        "Maracaibo, Venezuela",
-        "Quito, Ecuador",
-        "Guarulhos, Brazil",
-        "Campinas, Brazil",
-        "Barranquilla, Colombia",
-        "São Luís, Brazil",
-        "São Gonçalo, Brazil",
-        "Maceió, Brazil",
-        "Callao, Peru",
-        "Duque de Caxias, Brazil",
-        "Córdoba, Argentina",
-        "Nova Iguaçu, Brazil",
-        "Teresina, Brazil",
-        "Campo Grande, Brazil",
-        "Rosario, Argentina",
-        "ão Bernardo do Campo, Brazil",
-        "Natal, Brazil",
-        "João Pessoa, Brazil",
-        "Santo André, Brazil",
-        "Arequipa, Peru",
-        "Barquisimeto, Venezuela",
-        "Cartagena, Colombia",
-        "Trujillo, Peru",
-        "Montevideo, Uruguay",
-        "Osasco, Brazil",
-        "Valencia, Venezuela",
-        "La Paz, Bolivia",
-        "El Alto, Bolivia",
-        "Chiclayo, Peru",
-        # Oceania (Australasia)
-        "Sydney, Australia",
-        "Melbourne, Australia",
-        "Brisbane, Australia",
-        "Perth, Australia",
-        "Auckland, New Zealand",
-        "Adelaide, Australia",
-        "Gold Coast, Australia",
-        "Newcastle, Australia",
-        "Canberra, Australia",
-        "Wellington, New Zealand",
-        "Christchurch, New Zealand",
-        "Sunshine Coast, Australia",
-        "Wollongong, Australia",
-        "Geelong, Australia",
-        "Port Moresby, Papua New Guinea",
-        "Hobart, Australia",
-        "Townsville, Australia",
-        "Hamilton, New Zealand",
-        "Cairns, Australia",
-        "Tauranga, New Zealand",
-        "Darwin, Australia",
-        "Toowoomba, Australia",
-        "Dunedin, New Zealand",
-        "Ballarat, Australia",
-        "Bendigo, Australia",
-        "Lae, Papua New Guinea",
-        "Palmerston North, New Zealand",
-        "Albury-Wodonga, Australia",
-        "Launceston, Australia",
-        "Mackay, Australia",
-        "Rockhampton, Australia",
-        "Bunbury, Australia",
-        "Coffs Harbour, Australia",
-        "Bundaberg, Australia",
-        "Nouméa, New Caledonia",
-        "Wagga Wagga, Australia",
-        "Hervey Bay, Australia",
-        "Rotorua, New Zealand",
-        "Whangārei, New Zealand",
-        "New Plymouth, New Zealand",
-        "Invercargill, New Zealand",
-        "Nelson, New Zealand",
-        "Suva, Fiji",
-        "Hastings, New Zealand",
-        "Shepparton, Australia",
-        "Mildura, Australia",
-        "Port Macquarie, Australia",
-        "Gladstone, Australia",
-        "Tamworth, Australia",
-        "Traralgon, Australia"
-
-    ]
+    # --- NEW DYNAMIC LIST GENERATION ---
+    MIN_POPULATION = 200000
+    INPUT_CSV = "worldcities.csv" # Assumes file is in root
     
+    print(f"Loading cities from '{INPUT_CSV}' with population >= {MIN_POPULATION}...")
+    city_list = load_cities_from_csv(INPUT_CSV, MIN_POPULATION)
+    
+    if city_list is None:
+        print("Exiting due to error.")
+        return
+        
+    # De-duplicate the list (e.g., if CSV has multiple entries)
+    city_list = sorted(list(set(city_list)))
+    print(f"Found {len(city_list)} unique cities matching criteria.")
+    # --- END NEW DYNAMIC LIST ---
 
     headers = {'User-Agent': USER_AGENT}
     all_city_data = []
-    output_filename = "cities_.json"
+    output_filename = "cities_gt_400k.json" # New output file name
 
     print(f"Starting geocoding for {len(city_list)} cities...")
     print(f"Results will be saved to '{output_filename}'")

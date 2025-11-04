@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>City Bounding Box Explorer</title>
+    
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Leaflet.js for the map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+     crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+     crossorigin=""></script>
+     
+    <style>
+        /* Use Inter font */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow: hidden; /* Prevent scrolling of the whole page */
+        }
+        /* Leaflet map must have a defined height */
+        #map {
+            height: 100%;
+            width: 100%;
+            z-index: 0; /* Ensure map is behind sidebar controls if they overlap */
+        }
+        
+        /* Custom scrollbar for city list */
+        #cityListContainer::-webkit-scrollbar {
+            width: 6px;
+        }
+        #cityListContainer::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1; /* cool-gray-300 */
+            border-radius: 3px;
+        }
+        #cityListContainer::-webkit-scrollbar-track {
+            background-color: #f1f5f9; /* cool-gray-100 */
+        }
+    </style>
+</head>
+<body class="h-screen bg-gray-100 flex flex-col lg:flex-row">
+
+    <!-- Sidebar for Controls -->
+    <div class="w-full lg:w-1/3 xl:w-1/4 h-1/2 lg:h-full flex flex-col bg-white shadow-lg z-10 p-4 lg:p-6 overflow-hidden">
+        <h1 class="text-2xl font-bold text-gray-800 mb-4">Bounding Box Explorer</h1>
+        
+        <!-- Instructions -->
+        <div class="text-sm text-gray-600 mb-4 space-y-2">
+            <p>1. Run the <code class="bg-gray-200 px-1 py-0.5 rounded">get_city_bboxes.py</code> script.</p>
+            <p>2. Open the generated <code class="bg-gray-200 px-1 py-0.5 rounded">city_bounding_boxes.json</code> file and copy its *entire* content.</p>
+            <p>3. Paste the JSON into the text box below and click "Load".</t>
+        </div>
+
+        <!-- JSON Input -->
+        <textarea id="jsonInput"
+            class="w-full h-32 flex-shrink-0 border border-gray-300 rounded-md p-2 font-mono text-xs text-gray-700 shadow-inner focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Paste your JSON content here..."></textarea>
+        
+        <button id="loadButton" 
+            class="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-150 ease-in-out mt-3">
+            Load & Display Bounding Boxes
+        </button>
+
+        <!-- City List -->
+        <h3 class="text-lg font-semibold text-gray-700 mt-5 mb-2 flex-shrink-0">Loaded Cities</h3>
+        <div id="cityListContainer" class="flex-grow overflow-y-auto bg-gray-50 border rounded-md divide-y divide-gray-200">
+            <!-- City items will be injected here by JavaScript -->
+            <p id="cityListPlaceholder" class="p-4 text-gray-500 text-center">No cities loaded yet.</p>
+        </div>
+    </div>
+
+    <!-- Map Container -->
+    <div class="w-full lg:w-2/3 xl:w-3/4 h-1/2 lg:h-full">
+        <div id="map"></div>
+    </div>
+
+    <!-- Main JavaScript Logic -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. Initialize the Map
+            const map = L.map('map').setView([20, 0], 2); // Centered on the world
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            // Layer group to hold all our rectangles
+            let rectangleLayers = L.layerGroup().addTo(map);
+
+            // Get DOM elements
+            const loadButton = document.getElementById('loadButton');
+            const jsonInput = document.getElementById('jsonInput');
+            const cityListEl = document.getElementById('cityListContainer');
+            const cityListPlaceholder = document.getElementById('cityListPlaceholder');
+            
+            // 2. Sample Data (from your example)
+            const sampleData = [
+                { "name": "New York, USA", "search_term": "New York", "bbox": { "west": -74.0472, "south": 40.6795, "east": -73.9712, "north": 40.7920 }},
+                { "name": "Berlin, Germany", "search_term": "Berlin", "bbox": { "west": 13.0668, "south": 52.3271, "east": 13.7813, "north": 52.6847 }},
+                { "name": "Cologne, Germany", "search_term": "Cologne", "bbox": { "west": 6.809, "south": 50.83, "east": 7.16, "north": 51.085 }},
+                { "name": "Düsseldorf, Germany", "search_term": "Düsseldorf", "bbox": { "west": 6.69, "south": 51.11, "east": 6.94, "north": 51.34 }},
+                { "name": "Seoul, South Korea", "search_term": "Seoul", "bbox": { "west": 126.7340, "south": 37.4132, "east": 127.2693, "north": 37.7151 }},
+                { "name": "Tokyo, Japan", "search_term": "Tokyo (23 Wards)", "bbox": { "west": 139.555, "south": 35.513, "east": 139.923, "north": 35.821 }},
+                { "name": "Beijing, China", "search_term": "Beijing", "bbox": { "west": 115.3186, "south": 39.3810, "east": 117.5660, "north": 41.1024 }},
+                { "name": "Sydney, Australia", "search_term": "Sydney", "bbox": { "west": 151.10, "south": -33.96, "east": 151.30, "north": -33.76 }},
+                { "name": "Santiago, Chile", "search_term": "Santiago", "bbox": { "west": -70.853, "south": -33.678, "east": -70.403, "north": -33.294 }},
+                { "name": "São Paulo, Brazil", "search_term": "Sao Paulo", "bbox": { "west": -46.8842, "south": -24.0176, "east": -46.3609, "north": -23.3448 }}
+            ];
+
+            // 3. Function to plot boxes on the map
+            function plotBoxes(cityData) {
+                // Clear existing layers and list
+                rectangleLayers.clearLayers();
+                cityListEl.innerHTML = ''; // Clear the list
+                
+                const allBounds = [];
+
+                if (!cityData || cityData.length === 0) {
+                    cityListEl.appendChild(cityListPlaceholder);
+                    return;
+                }
+
+                cityData.forEach(city => {
+                    // Check for valid data
+                    if (city.bbox && city.bbox.south !== undefined) {
+                        // Leaflet bounds format is [[south, west], [north, east]]
+                        const bounds = [
+                            [city.bbox.south, city.bbox.west],
+                            [city.bbox.north, city.bbox.east]
+                        ];
+                        
+                        allBounds.push(bounds);
+
+                        // Create the rectangle
+                        const rect = L.rectangle(bounds, { 
+                            color: "#3b82f6", // blue-500
+                            weight: 2, 
+                            fillOpacity: 0.1 
+                        });
+                        
+                        // Add a popup
+                        rect.bindPopup(`<b>${city.name}</b><br><small>Search: ${city.search_term}</small>`);
+                        
+                        // Add to the map
+                        rectangleLayers.addLayer(rect);
+
+                        // Create list item in the sidebar
+                        const item = document.createElement('div');
+                        item.className = 'p-3 hover:bg-gray-200 rounded-md cursor-pointer transition-colors duration-100 ease-in-out';
+                        item.innerText = city.name.split(',')[0]; // Get simple name
+                        item.title = city.name; // Show full name on hover
+                        
+                        // Add click event to zoom to the box
+                        item.onclick = () => {
+                            map.fitBounds(bounds);
+                            rect.openPopup();
+                        };
+                        
+                        cityListEl.appendChild(item);
+                    }
+                });
+
+                // Zoom the map to fit all loaded boxes
+                if (allBounds.length > 0) {
+                    map.fitBounds(allBounds, { padding: [50, 50] }); // Add some padding
+                }
+            }
+
+            // 4. Event listener for the load button
+            loadButton.addEventListener('click', () => {
+                const text = jsonInput.value;
+                if (!text) {
+                    alert('Text area is empty. Please paste your JSON data.');
+                    return;
+                }
+                
+                try {
+                    const data = JSON.parse(text);
+                    plotBoxes(data);
+                } catch (e) {
+                    console.error('JSON Parsing Error:', e);
+                    alert('Invalid JSON! Please check the console for errors and ensure you copied the entire file content.');
+                }
+            });
+
+            // 5. Load the sample data on initial page load
+            // Pre-fill the text area with the sample data
+            jsonInput.value = JSON.stringify(sampleData, null, 2);
+            // Plot the sample data
+            plotBoxes(sampleData);
+        });
+    </script>
+</body>
+</html>
