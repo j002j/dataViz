@@ -8,6 +8,7 @@ mapillary
 ultralytics
 opencv-python-headless
 requests
+numpy
 
 # Database & Config
 psycopg2-binary
