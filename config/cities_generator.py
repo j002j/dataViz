@@ -1,22 +1,12 @@
-#!/usr/bin/env python3
-
 """
 This script fetches bounding box coordinates for a list of cities
 using the free OpenStreetMap Nominatim API.
-
-!!! IMPORTANT !!!
-Before running, you MUST change the 'USER_AGENT' variable below
-to something that identifies your script or application, as required
-by the Nominatim usage policy.
-For example: 'MyAwesomeApp/1.0 (your-email@example.com)'
 """
 
 import requests
 import json
 import time
 
-# --- CONFIGURATION ---
-# !!! CHANGE THIS VALUE !!!
 # This is a mandatory requirement from the Nominatim API.
 # Failure to set a unique User-Agent may result in your IP being banned.
 USER_AGENT = 'CityBoxFinder/1.0 (anton.rabanus@study.hs-duesseldorf.de)'
