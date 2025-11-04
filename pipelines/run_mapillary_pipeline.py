@@ -8,7 +8,13 @@ from dotenv import load_dotenv
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Now we can import from src and the local pipelines folder
-from src.db.db_utils import get_db_connection, create_detections_table
+from src.db.db_utils import (
+    get_db_connection, 
+    create_detections_table,
+    create_cities_table,
+    check_or_create_city,
+    mark_city_as_scanned
+)
 import mapillary_processor as mp
 
 # Load environment variables from .env file
@@ -22,8 +28,7 @@ def run_pipeline():
         print("Error: MAPILLARY_ACCESS_TOKEN is not set in your .env file.")
         return
 
-    # --- THIS IS THE NEW PART ---
-    # Load city bounding boxes from the new JSON config file
+    # --- Load city bounding boxes from JSON config file ---
     try:
         with open('config/cities.json', 'r') as f:
             cities_config = json.load(f)
@@ -34,20 +39,20 @@ def run_pipeline():
     except Exception as e:
         print(f"Error loading config/cities.json: {e}")
         return
-    # --- END NEW PART ---
 
     OUTPUT_DIR = "cropped_people"
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     
-    # --- Step 1: Connect to Database & Create Table ---
+    # --- Step 1: Connect to Database & Create Tables ---
     print("Initializing database connection...")
     db_conn = get_db_connection()
     if db_conn is None:
         print("Failed to connect to database. Exiting pipeline.")
         return
     
-    # Ensure the table for our results exists
+    # Ensure tables for our results exist
     create_detections_table(db_conn)
+    create_cities_table(db_conn)  # <-- ADD THIS LINE
 
     # --- Step 2: Load YOLO Model (do this once) ---
     print("\nLoading YOLOv8 model...")
@@ -65,8 +70,22 @@ def run_pipeline():
         city_bbox = city['bbox']
         
         print(f"\n==================================================")
-        print(f"Processing city: {city_name}")
+        print(f"Checking city: {city_name}")
         print(f"==================================================")
+
+        # --- NEW CHECKING LOGIC ---
+        city_id, is_scanned = check_or_create_city(db_conn, city_name, city_bbox)
+        
+        if city_id is None:
+            print(f"Could not check or create city {city_name}, skipping.")
+            continue
+
+        if is_scanned:
+            print(f"Skipping {city_name}, already marked as scanned.")
+            continue
+        # --- END NEW LOGIC ---
+
+        print(f"Processing city: {city_name} (ID: {city_id})")
 
         # Get Image Info for this city
         image_list = mp.fetch_image_data(
@@ -76,6 +95,8 @@ def run_pipeline():
         
         if not image_list:
             print(f"No images found for {city_name}. Skipping.")
+            # Note: We do NOT mark as scanned here, so the script
+            # can try again next time in case it was a temporary API error.
             continue
             
         # Process Images & Save to DB for this city
@@ -85,6 +106,12 @@ def run_pipeline():
             OUTPUT_DIR,
             db_conn  # Pass the database connection
         )
+
+        # --- NEW MARKING LOGIC ---
+        # If we successfully processed, mark the city as scanned
+        print(f"Successfully processed {city_name}. Marking as scanned.")
+        mark_city_as_scanned(db_conn, city_id)
+        # --- END NEW LOGIC ---
     
     # --- Step 4: Clean up ---
     db_conn.close()

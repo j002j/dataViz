@@ -146,3 +146,7 @@ After the pipeline has run, you can connect directly to the database to see the 
     ORDER BY created_at DESC
     LIMIT 10;
     ```
+
+## Additional tools:
+
+To generate a JSON file with the city bounding boxes `config > cities_generator.py` can be run once. This script uses OpenStreetMaps API to gather the coordinates for the top 50 most populous cities for each continent.
