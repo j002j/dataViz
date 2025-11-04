@@ -3,73 +3,134 @@ import requests
 import cv2
 import json
 import uuid
+import time  # <-- ADDED
+import numpy as np  # <-- ADDED
 import mapillary.interface as mly
 from ultralytics import YOLO
 from psycopg2 import sql, extras
 
+def generate_bbox_tiles(bbox_dict, step=0.1):
+    """
+    Generates a grid of smaller bounding box "tiles" from a large one.
+    Uses the dictionary format.
+    A step of 0.1 degrees (area 0.01) is a safe bet for the Mapillary API.
+    """
+    # Extract values
+    min_lon = bbox_dict['west']
+    min_lat = bbox_dict['south']
+    max_lon = bbox_dict['east']
+    max_lat = bbox_dict['north']
+    
+    lon_steps = np.arange(min_lon, max_lon, step)
+    lat_steps = np.arange(min_lat, max_lat, step)
+
+    for min_lon_tile in lon_steps:
+        for min_lat_tile in lat_steps:
+            max_lon_tile = min_lon_tile + step
+            max_lat_tile = min_lat_tile + step
+            
+            # Ensure tile doesn't go outside the original max bounds
+            if max_lon_tile > max_lon:
+                max_lon_tile = max_lon
+            if max_lat_tile > max_lat:
+                max_lat_tile = max_lat
+            
+            # Return in the same dict format
+            yield {
+                "west": min_lon_tile,
+                "south": min_lat_tile,
+                "east": max_lon_tile,
+                "north": max_lat_tile
+            }
+
 def fetch_image_data(token, bbox_dict):
     """
-    Queries the Mapillary v4 Graph API directly for images in a bounding box.
+    Queries the Mapillary v4 Graph API for images in a bounding box.
+    HANDLES TILING for large bounding boxes to prevent 500 errors.
     """
     print("Connecting to Mapillary API...")
     mly.set_access_token(token)
     
-    search_url = "https://graph.mapillary.com/images"
-    bbox_string = f"{bbox_dict['west']},{bbox_dict['south']},{bbox_dict['east']},{bbox_dict['north']}"
+    # --- NEW TILING LOGIC ---
+    # Generate the list of small tiles
+    tiles = list(generate_bbox_tiles(bbox_dict, step=0.1))
+    print(f"Divided large bounding box into {len(tiles)} tiles for querying.")
     
-    params = {
-        'access_token': token,
-        'fields': 'id,geometry,captured_at',  # <-- ADDED 'captured_at'
-        'bbox': bbox_string
-    }
-
-    print(f"Searching for images in bounding box: {bbox_string}")
-
-    try:
-        response = requests.get(search_url, params=params)
-        response.raise_for_status()
-        data = response.json()
+    all_features = {} # Use a dict to store unique features by ID
+    search_url = "https://graph.mapillary.com/images"
+    
+    for i, tile_bbox_dict in enumerate(tiles):
+        bbox_string = f"{tile_bbox_dict['west']},{tile_bbox_dict['south']},{tile_bbox_dict['east']},{tile_bbox_dict['north']}"
         
-        features = data.get('data', [])
+        params = {
+            'access_token': token,
+            'fields': 'id,geometry,captured_at',
+            'bbox': bbox_string
+        }
         
-        if not features:
-            print("No images found in the specified bounding box.")
-            return []
-            
-        print(f"Found {len(features)} images. Fetching thumbnail URLs...")
-        image_list = []
+        print(f"  -> Querying tile {i+1}/{len(tiles)}: {bbox_string}")
 
-        for i, feature in enumerate(features):
-            image_id = feature['id']
-            location = feature['geometry']['coordinates']
-            captured_at = feature.get('captured_at') # <-- GET 'captured_at'
+        try:
+            response = requests.get(search_url, params=params)
+            response.raise_for_status() # Raise HTTPError for bad responses (4xx or 5xx)
+            data = response.json()
             
-            # Convert timestamp from milliseconds (str) to seconds (float) for database
-            if captured_at:
-                captured_at_seconds = float(captured_at) / 1000.0
+            features_in_tile = data.get('data', [])
+            if features_in_tile:
+                print(f"    -> Found {len(features_in_tile)} images.")
+                # Add to our dict, automatically handling duplicates from overlapping tiles
+                for feature in features_in_tile:
+                    all_features[feature['id']] = feature
             
-            try:
-                image_url = mly.image_thumbnail(image_id, resolution=2048)
-            except Exception as e:
-                print(f"  - Could not get thumbnail for {image_id}: {e}. Skipping.")
-                continue
-            
-            image_list.append({
-                'id': image_id,
-                'location': location,
-                'url': image_url,
-                'captured_at': captured_at_seconds # <-- STORE 'captured_at'
-            })
-            
-        print(f"Successfully retrieved data for {len(image_list)} images.")
-        return image_list
+            # IMPORTANT: Be polite to the API, add a small delay
+            time.sleep(0.2) # 200ms delay
 
-    except requests.exceptions.RequestException as e:
-        print(f"Error connecting to Mapillary API: {e}")
+        except requests.exceptions.RequestException as e:
+            # Catch errors but continue the loop
+            print(f"    -> WARNING: Error on tile {i+1}: {e}. Skipping this tile.")
+            continue # Skip this tile, move to the next
+        except Exception as e:
+            print(f"    -> WARNING: An unexpected error occurred on tile {i+1}: {e}. Skipping tile.")
+            continue
+    # --- END NEW TILING LOGIC ---
+
+    # Now, process the combined, unique features
+    unique_features_list = list(all_features.values())
+
+    if not unique_features_list:
+        print("No images found in any tiles for the specified bounding box.")
         return []
-    except Exception as e:
-        print(f"An unexpected error occurred: {e}")
-        return []
+        
+    print(f"\nFound {len(unique_features_list)} unique images total. Fetching thumbnail URLs...")
+    image_list = []
+
+    # This part of the function (thumbnail fetching) is the same as before
+    for i, feature in enumerate(unique_features_list):
+        image_id = feature['id']
+        location = feature['geometry']['coordinates']
+        captured_at = feature.get('captured_at')
+        
+        if captured_at:
+            captured_at_seconds = float(captured_at) / 1000.0
+        else:
+            captured_at_seconds = None # Handle missing capture_at
+        
+        try:
+            image_url = mly.image_thumbnail(image_id, resolution=2048)
+        except Exception as e:
+            print(f"  - Could not get thumbnail for {image_id}: {e}. Skipping.")
+            continue
+        
+        image_list.append({
+            'id': image_id,
+            'location': location,
+            'url': image_url,
+            'captured_at': captured_at_seconds
+        })
+        
+    print(f"Successfully retrieved data for {len(image_list)} images.")
+    return image_list
+
 
 def download_image(url, path):
     """Downloads an image from a URL and saves it to a path."""
