@@ -140,7 +140,7 @@ def main():
     # --- Load Cities from CSV ---
     MIN_POPULATION = 400000
     # This path is relative to the /app WORKDIR
-    INPUT_CSV = "worldcities.csv"
+    INPUT_CSV = "config/worldcities.csv"
     
     print(f"Loading cities from '{INPUT_CSV}' with population >= {MIN_POPULATION}...")
     city_list = load_cities_from_csv(INPUT_CSV, MIN_POPULATION)

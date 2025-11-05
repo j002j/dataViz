@@ -1,6 +1,6 @@
 import os
 # The import works because this is run as `python -m src.db.init_db`
-from db_utils import get_db_connection 
+from src.db.db_utils import get_db_connection 
 
 # Get connection
 conn = get_db_connection()
