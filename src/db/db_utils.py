@@ -91,10 +91,10 @@ def check_or_create_city(conn, city_name, city_bbox):
             if result:
                 # City exists, return its ID and scanned status
                 city_id, is_scanned = result
-                return city_id, is_scanned
+                return city_id, is_scanned, False # <-- ADD ', False'
             else:
                 # City doesn't exist, insert it
-                print(f"Adding new city '{city_name}' to database.")
+                print(f"  -> Adding new city '{city_name}' to database.") # <-- I added indentation
                 cursor.execute(
                     """
                     INSERT INTO cities (name, bbox, scanned) 
@@ -106,7 +106,19 @@ def check_or_create_city(conn, city_name, city_bbox):
                 city_id = cursor.fetchone()[0]
                 conn.commit()
                 # Return new ID and scanned status (which is False)
-                return city_id, False
+                return city_id, False, True # <-- ADD ', True'
+                
+    except Exception as e:
+        print(f"Error checking/creating city '{city_name}': {e}")
+        conn.rollback()
+        # Return None, None to signal an error
+        return None, None, False # <-- ADD ', False'
+                
+    except Exception as e:
+        print(f"Error checking/creating city '{city_name}': {e}")
+        conn.rollback()
+        # Return None, None to signal an error
+        return None, None, False
                 
     except Exception as e:
         print(f"Error checking/creating city '{city_name}': {e}")

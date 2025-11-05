@@ -138,7 +138,7 @@ def main():
     create_cities_table(db_conn)
 
     # --- Load Cities from CSV ---
-    MIN_POPULATION = 400000
+    MIN_POPULATION = 250000 # cities with pop >= 250 000 inhabitants
     # This path is relative to the /app WORKDIR
     INPUT_CSV = "config/worldcities.csv"
     
@@ -167,18 +167,28 @@ def main():
         
         if city_data:
             # --- SAVE TO DATABASE ---
-            city_id, is_scanned = check_or_create_city(
+            # Unpack the new 3-value tuple
+            city_id, is_scanned, was_created = check_or_create_city(
                 db_conn, 
                 city_data['name'], 
                 city_data['bbox']
             )
-            if city_id and not is_scanned:
-                cities_added += 1
-            elif is_scanned:
+            
+            if city_id and is_scanned:
+                # Case 1: City exists and is DONE
                 print("  -> City already exists and is marked as scanned. Skipping.")
                 cities_skipped += 1
+            elif city_id and was_created:
+                # Case 2: City was just added
+                print("  -> Successfully added new city.")
+                cities_added += 1
+            elif city_id and not was_created and not is_scanned:
+                # Case 3: City exists, but is not scanned
+                print("  -> City already in database, pending scan.")
+                cities_added += 1 # Still counts as a city to be processed
             else:
-                print("  -> Failed to add city to database.")
+                # Case 4: Error
+                print("  -> Failed to add or find city in database.")
         
         # --- IMPORTANT: RATE LIMIT ---
         time.sleep(1)

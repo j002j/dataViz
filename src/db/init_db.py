@@ -1,6 +1,6 @@
 import os
 # The import works because this is run as `python -m src.db.init_db`
-from src.db.db_utils import get_db_connection 
+from src.db.db_utils import get_db_connection, create_cities_table, create_detections_table
 
 # Get connection
 conn = get_db_connection()
@@ -26,3 +26,22 @@ finally:
     cursor.close()
     conn.close()
     print("Database connection closed.")
+
+def main():
+    print("Initializing database schema...")
+    conn = get_db_connection()
+    if conn is None:
+        print("Failed to get DB connection. Exiting.")
+        sys.exit(1)
+
+    # This is now the single source of truth for the schema
+    create_cities_table(conn)
+    create_detections_table(conn)
+    # Add future tables here, e.g.:
+    # create_analysis_table(conn)
+
+    conn.close()
+    print("Database schema is ready.")
+
+if __name__ == "__main__":
+    main()
