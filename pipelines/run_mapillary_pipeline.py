@@ -2,24 +2,20 @@ import os
 import sys
 import json
 from ultralytics import YOLO
-from dotenv import load_dotenv
+# from dotenv import load_dotenv # <-- REMOVED
 
-# Add src directory to the Python path to allow imports
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
-# Now we can import from src and the local pipelines folder
+# We can import from 'src' directly because PYTHONPATH="/app" is set in the Dockerfile
 from src.db.db_utils import (
     get_db_connection, 
     create_detections_table,
     create_cities_table,
-    get_unscanned_cities, # <-- IMPORT THIS
+    get_unscanned_cities, 
     mark_city_as_scanned
-    # We no longer need check_or_create_city here
 )
+# The `mapillary_processor` import works because it's in the same `pipelines/` folder
 import mapillary_processor as mp
 
-# Load environment variables from .env file
-load_dotenv()
+# --- load_dotenv() was removed ---
 
 def run_pipeline():
     """Main pipeline function."""
@@ -29,13 +25,7 @@ def run_pipeline():
         print("Error: MAPILLARY_ACCESS_TOKEN is not set in your .env file.")
         return
 
-    # --- This config file is no longer used ---
-    # try:
-    #     with open('config/cities.json', 'r') as f:
-    #         cities_config = json.load(f)
-    # ...
-    # ---
-
+    # This path is relative to the /app WORKDIR
     OUTPUT_DIR = "cropped_people"
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     
@@ -46,11 +36,11 @@ def run_pipeline():
         print("Failed to connect to database. Exiting pipeline.")
         return
     
-    # Ensure tables exist (this is safe to run every time)
+    # Ensure tables exist
     create_cities_table(db_conn) 
     create_detections_table(db_conn)
 
-    # --- Step 2: Load YOLO Model (do this once) ---
+    # --- Step 2: Load YOLO Model ---
     print("\nLoading YOLOv8 model...")
     try:
         model = YOLO('yolov8n.pt') 
@@ -74,13 +64,11 @@ def run_pipeline():
     for city in cities_to_scan:
         city_id = city['id']
         city_name = city['name']
-        city_bbox = city['bbox'] # This is a dict, already parsed from JSONB
+        city_bbox = city['bbox'] 
         
         print(f"\n==================================================")
         print(f"Processing city: {city_name} (ID: {city_id})")
         print(f"==================================================")
-
-        # --- No need to check if scanned, the query already did ---
 
         # Get Image Info for this city
         image_list = mp.fetch_image_data(
@@ -90,8 +78,6 @@ def run_pipeline():
         
         if not image_list:
             print(f"No images found for {city_name}.")
-            # We will NOT mark as scanned, so the script
-            # can try again next time in case it was a temporary API error.
             print(f"Skipping {city_name} for this run.")
             continue
             
@@ -101,7 +87,7 @@ def run_pipeline():
             model, 
             OUTPUT_DIR,
             db_conn,
-            city_id  # <-- Pass the city_id
+            city_id  
         )
 
         # If we successfully processed, mark the city as scanned

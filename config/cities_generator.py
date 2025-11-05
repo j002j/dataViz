@@ -11,10 +11,10 @@ import time
 import csv
 import os
 import sys
-from dotenv import load_dotenv
 
-# Add src directory to the Python path to allow db_utils import
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# from dotenv import load_dotenv # <-- REMOVED
+
+# We can import from 'src' directly because PYTHONPATH="/app" is set in the Dockerfile
 from src.db.db_utils import get_db_connection, check_or_create_city, create_cities_table
 
 # This is a mandatory requirement from the Nominatim API.
@@ -25,7 +25,6 @@ def get_city_bbox(city_name, headers):
     """
     Fetches the bounding box for a single city from Nominatim,
     prioritizing results explicitly typed as 'city'.
-    (This is the robust function from our previous conversation)
     """
     url = f"https://nominatim.openstreetmap.org/search?q={requests.utils.quote(city_name)}&format=json&limit=5"
     
@@ -84,6 +83,7 @@ def load_cities_from_csv(csv_path, min_population):
     city_list = []
     print(f"Reading from {csv_path}...")
     try:
+        # The WORKDIR is /app, so the path is relative to that
         with open(csv_path, 'r', encoding='utf-8') as f:
             reader = csv.DictReader(f)
             for row in reader:
@@ -125,8 +125,7 @@ def main():
         print("="*50)
         return
         
-    # --- Load .env variables for database connection ---
-    load_dotenv()
+    # --- load_dotenv() was removed ---
 
     # --- Connect to Database ---
     print("Initializing database connection...")
@@ -140,7 +139,8 @@ def main():
 
     # --- Load Cities from CSV ---
     MIN_POPULATION = 400000
-    INPUT_CSV = "assets/worldcities.csv"
+    # This path is relative to the /app WORKDIR
+    INPUT_CSV = "worldcities.csv"
     
     print(f"Loading cities from '{INPUT_CSV}' with population >= {MIN_POPULATION}...")
     city_list = load_cities_from_csv(INPUT_CSV, MIN_POPULATION)
@@ -167,7 +167,6 @@ def main():
         
         if city_data:
             # --- SAVE TO DATABASE ---
-            # This function inserts the city if it doesn't exist.
             city_id, is_scanned = check_or_create_city(
                 db_conn, 
                 city_data['name'], 

@@ -23,6 +23,8 @@ services:
       - postgres
     env_file:
       - .env
+    environment:
+      - POSTGRES_HOST=postgres
 
   # --- NEW PIPELINE SERVICE ---
   mapillary-pipeline:
