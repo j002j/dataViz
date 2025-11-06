@@ -12,7 +12,7 @@ database to prevent reprocessing.
 import os
 import sys
 import json
-import psycopg2
+import sqlite3 # Import for database operations
 
 # Add the project root to the Python path to allow imports from 'src'
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))

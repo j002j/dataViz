@@ -1,46 +1,16 @@
 services:
-  postgres:
-    image: postgres:15
-    # Or maybe: image: postgis/postgis:15-3.4
-    container_name: postgres_db
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    ports:
-      - "${POSTGRES_PORT}:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    env_file:
-      - .env
-
-  db-init:
-    build:
-      context: .
-      dockerfile: Dockerfile  # Assuming a Dockerfile exists
-    command: python -m src.db.init_db
-    depends_on:
-      - postgres
-    env_file:
-      - .env
-    environment:
-      - POSTGRES_HOST=postgres
-
-  # --- NEW PIPELINE SERVICE ---
   mapillary-pipeline:
     build:
       context: .
-      dockerfile: Dockerfile # Assumes a Dockerfile that installs requirements.txt
+      dockerfile: Dockerfile
+    # The default command from your run_pipeline script
     command: python -m pipelines.run_mapillary_pipeline
-    depends_on:
-      - postgres  # Wait for the DB to be ready
     env_file:
       - .env
     volumes:
-      # Mount the output directory to your host machine to see the images
+      # Mount the output directory to your host machine
       - ./cropped_people:/app/cropped_people
       # Mount the app code
-      - .:/app 
-
-volumes:
-  postgres_data:
+      - .:/app
+      # NEW: Mount a host directory to persist the SQLite database
+      - ./data:/app/data

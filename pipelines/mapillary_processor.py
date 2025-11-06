@@ -16,7 +16,7 @@ from ultralytics import YOLO
 import time
 from datetime import datetime, timezone  # --- MODIFIED IMPORT ---
 import json
-import psycopg2 # Import for database operations
+import sqlite3 # Import for database operations
 import math
 
 class MapillaryProcessor:
@@ -118,14 +118,13 @@ class MapillaryProcessor:
     # --- THIS IS THE FIXED FUNCTION ---
     def _save_detection_to_db(self, cropped_file, original_image_id, captured_at_data, location, bounding_box_original):
         """
-        Saves a single detection record to the 'mapillary_detections' table.
-        This function now handles 'captured_at' data that is either
-        an ISO 8601 string OR an integer/float millisecond timestamp.
+        Saves a single detection record to the 'mapillary_detections' table
+        using sqlite3-compatible syntax.
         """
+        
+        # --- 1. Parse Timestamp ---
+        parsed_captured_at = None
         try:
-            parsed_captured_at = None
-            
-            # Check the type of the 'captured_at' data
             if isinstance(captured_at_data, str):
                 # It's a string, parse it as ISO format
                 parsed_captured_at = datetime.fromisoformat(captured_at_data.replace('Z', '+00:00'))
@@ -135,12 +134,17 @@ class MapillaryProcessor:
                 timestamp_sec = captured_at_data / 1000.0
                 parsed_captured_at = datetime.fromtimestamp(timestamp_sec, tz=timezone.utc)
             
-            else:
-                # It's None or some other type we don't recognize.
-                if captured_at_data is not None:
-                     print(f"    > WARNING: Unknown 'captured_at' format ({type(captured_at_data)}). Saving as NULL.")
-                # parsed_captured_at remains None, which will be inserted as NULL
-            
+            elif captured_at_data is not None:
+                # It's some other type we don't recognize.
+                 print(f"    > WARNING: Unknown 'captured_at' format ({type(captured_at_data)}). Saving as NULL.")
+        
+        except Exception as e:
+             print(f"    > WARNING: Failed to parse timestamp '{captured_at_data}': {e}")
+             # Continue with parsed_captured_at = None
+
+
+        # --- 2. Save to Database ---
+        try:
             sql_query = """
             INSERT INTO mapillary_detections (
                 cropped_file, 
@@ -149,28 +153,29 @@ class MapillaryProcessor:
                 location, 
                 bounding_box_original, 
                 city_id
-            ) VALUES (%s, %s, %s, %s, %s, %s)
+            ) VALUES (?, ?, ?, ?, ?, ?)
             """
             
-            # Data to be inserted
+            # Data to be inserted (use ? placeholders)
             data = (
                 cropped_file,
-                int(original_image_id), # Ensure image ID is an integer (BIGINT)
-                parsed_captured_at,     # This is now a datetime object or None
-                json.dumps(location),   # Convert location dict to JSON string for JSONB
-                json.dumps(bounding_box_original), # Convert bbox list to JSON string for JSONB
-                self.city_id # The city_id passed during initialization
+                int(original_image_id),
+                parsed_captured_at,
+                json.dumps(location),   # Convert dict to JSON string for TEXT
+                json.dumps(bounding_box_original), # Convert list to JSON string for TEXT
+                self.city_id
             )
             
-            # Execute the insert command
-            with self.conn.cursor() as cursor:
-                cursor.execute(sql_query, data)
-                self.conn.commit()
+            # Use the connection as the context manager.
+            # This automatically commits on success or rolls back on error.
+            with self.conn:
+                self.conn.execute(sql_query, data)
+                
             print(f"    > Saved detection {cropped_file} to database.")
             
         except Exception as e:
+            # The 'with self.conn' block already handled the rollback
             print(f"    > ERROR: Failed to save detection to DB: {e}")
-            self.conn.rollback() # Roll back the transaction on error
 
 
     def process_image(self, image_data):
