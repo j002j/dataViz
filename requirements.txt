@@ -13,3 +13,6 @@
  
  # Database & Config
  python-dotenv
+
+ # web explorer
+ flask

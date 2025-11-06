@@ -7,6 +7,8 @@ services:
     command: python -m pipelines.run_mapillary_pipeline
     env_file:
       - .env
+    environment:
+      - TORCH_DISABLE_NNPACK=1
     volumes:
       # Mount the output directory to your host machine
       - ./cropped_people:/app/cropped_people
@@ -14,3 +16,16 @@ services:
       - .:/app
       # NEW: Mount a host directory to persist the SQLite database
       - ./data:/app/data
+
+  web-explorer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: python web_explorer.py
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/app
+      - ./data:/app/data
+    env_file:
+      - .env
