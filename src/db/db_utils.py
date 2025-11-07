@@ -147,3 +147,46 @@ def get_unscanned_cities(conn):
     except Error as e:
         print(f"Error fetching unscanned cities: {e}")
         return []
+    
+def get_and_lock_one_unscanned_city(conn):
+    """
+    Atomically fetches one unscanned city and marks it as scanned
+    to prevent other processes from grabbing it.
+    """
+    city = None
+    try:
+        with conn:
+            # BEGIN IMMEDIATE locks the db for writing.
+            # This is critical for parallel processing.
+            cursor = conn.cursor()
+            cursor.execute("BEGIN IMMEDIATE TRANSACTION")
+            
+            # Find one unscanned city
+            cursor.execute(
+                "SELECT id, name, bbox FROM cities WHERE scanned = 0 LIMIT 1"
+            )
+            result = cursor.fetchone()
+            
+            if result:
+                # We found a city. Mark it as scanned *immediately*.
+                city = dict(result) # Convert sqlite3.Row to dict
+                cursor.execute(
+                    "UPDATE cities SET scanned = 1 WHERE id = ?", (city['id'],)
+                )
+                print(f"Process {os.getpid()} locked city: {city['name']}")
+                
+                # Parse the bbox string
+                if city['bbox']:
+                    city['bbox'] = json.loads(city['bbox'])
+            else:
+                # No more cities
+                print(f"Process {os.getpid()} found no unscanned cities.")
+                
+            # Commit the transaction to release the lock
+            conn.commit()
+            return city
+            
+    except sqlite3.Error as e:
+        print(f"Error locking city: {e}")
+        conn.rollback() # Roll back on error
+        return None

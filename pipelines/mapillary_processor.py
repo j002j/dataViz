@@ -18,6 +18,7 @@ from datetime import datetime, timezone  # --- MODIFIED IMPORT ---
 import json
 import sqlite3 # Import for database operations
 import math
+from tqdm import tqdm
 
 class MapillaryProcessor:
     """
@@ -257,18 +258,14 @@ class MapillaryProcessor:
         except Exception as e:
             print(f"  > Failed to process image {image_id}: {e}")
 
-    def process_bbox(self, main_bbox):
+    def process_bbox(self, main_bbox, pbar): # pbar may be None
         """
         Orchestrates the processing of a large bounding box by
         tiling it and processing images in each tile.
-        
-        NEW: Snaps the main_bbox to a 0.0025 degree grid before tiling.
         """
         
-        # --- NEW GRID SNAPPING LOGIC ---
         GRID_SIZE = 0.0025
         
-        # Snap the main BBOX *outward* to the grid
         snapped_min_lon = math.floor(main_bbox[0] / GRID_SIZE) * GRID_SIZE
         snapped_min_lat = math.floor(main_bbox[1] / GRID_SIZE) * GRID_SIZE
         snapped_max_lon = math.ceil(main_bbox[2] / GRID_SIZE) * GRID_SIZE
@@ -276,40 +273,32 @@ class MapillaryProcessor:
         
         snapped_bbox = [snapped_min_lon, snapped_min_lat, snapped_max_lon, snapped_max_lat]
         
-        print(f"Original main BBOX: {main_bbox}")
         print(f"Snapped main BBOX to {GRID_SIZE} grid: {snapped_bbox}")
-        # --- END NEW LOGIC ---
 
-        # Pass the *snapped* bbox to the tiler
         tiles = list(self._tile_bbox(snapped_bbox))
-        total_tiles = len(tiles)
-        print(f"Total tiles to process: {total_tiles}")
+        
+        # --- NEW: Use a local tqdm if pbar is None ---
+        # This gives us a progress bar for the *current city*
+        local_pbar = tqdm(total=len(tiles), unit="tile", desc=f"City Tiles")
         
         for i, tile in enumerate(tiles, 1):
-            # Also round the tile for cleaner logging
-            tile_str = (
-                f"[{tile[0]:.6f}, {tile[1]:.6f}, "
-                f"{tile[2]:.6f}, {tile[3]:.6f}]"
-            )
-            print(f"  Processing Tile {i}/{total_tiles}: {tile_str}")
-            
             images = self.fetch_images_in_tile(tile)
             
             if images is None:
                 print("  > Skipping tile due to API error.")
-                continue
+            elif not images:
+                pass
+            else:
+                for image_data in images:
+                    self.process_image(image_data)
                 
-            if not images:
-                # This is the check you asked for
-                print("  > No images found in this tile.")
-                continue
-                
-            print(f"  > Found {len(images)} images in tile. Processing...")
+            time.sleep(1)
             
-            for image_data in images:
-                self.process_image(image_data)
-                
-            # Rate limiting to respect Mapillary API
-            time.sleep(1) # 1 second delay between tiles
-            
-        print("Finished processing all tiles for the bounding box.")
+            # --- Update the correct progress bar ---
+            if pbar:
+                pbar.update(1) # Update global pbar (if we ever add it back)
+            else:
+                local_pbar.update(1) # Update local city pbar
+        
+        local_pbar.close() # Close the local pbar
+        print("Finished processing all tiles for this city.")

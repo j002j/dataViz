@@ -12,10 +12,12 @@ import csv
 import os
 import sys
 
-# from dotenv import load_dotenv # <-- REMOVED
+from dotenv import load_dotenv
 
 # We can import from 'src' directly because PYTHONPATH="/app" is set in the Dockerfile
 from src.db.db_utils import get_db_connection, check_or_create_city, create_cities_table
+
+load_dotenv()
 
 # This is a mandatory requirement from the Nominatim API.
 USER_AGENT = 'CityBoxFinder/1.0 (anton.rabanus@study.hs-duesseldorf.de)'
