@@ -1,6 +1,6 @@
 import os
 # The import works because this is run as `python -m src.db.init_db`
-from src.db.db_utils import get_db_connection, create_cities_table, create_detections_table
+from src.db.db_utils import * #get_db_connection, create_cities_table, create_detections_table
 
 # Get connection
 conn = get_db_connection()
@@ -37,8 +37,14 @@ def main():
     # This is now the single source of truth for the schema
     create_cities_table(conn)
     create_detections_table(conn)
-    # Add future tables here, e.g.:
-    # create_analysis_table(conn)
+    create_neighbourhoods_table(conn)
+    create_images_table(conn)
+    create_cropped_images_table(conn)
+    create_body_part_bbox_table(conn)
+    create_clothing_category_table(conn)
+    create_clothing_subtype_table(conn)
+    create_clothing_item_table(conn)
+    print("All tables created (if not existing).")
 
     conn.close()
     print("Database schema is ready.")

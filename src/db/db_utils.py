@@ -190,3 +190,193 @@ def get_and_lock_one_unscanned_city(conn):
         print(f"Error locking city: {e}")
         conn.rollback() # Roll back on error
         return None
+
+def create_neighbourhoods_table(conn):
+    create_table_query = """
+    CREATE TABLE IF NOT EXISTS neighbourhoods (
+        neighbourhood_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        city_id INTEGER NOT NULL REFERENCES cities(id) ON DELETE CASCADE,
+        name VARCHAR(255) NOT NULL,
+        scanned INTEGER DEFAULT 0 NOT NULL,
+        bbox TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    """
+    try:
+        with conn:
+            conn.execute(create_table_query)
+        print("Table 'neighbourhoods' is ready.")
+    except Error as e:
+        print(f"Error creating 'neighbourhoods' table: {e}")
+
+def create_images_table(conn):
+    create_table_query = """
+    CREATE TABLE IF NOT EXISTS images (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        city_id INTEGER REFERENCES cities(id) ON DELETE SET NULL,
+        neighbourhood_id INTEGER REFERENCES neighbourhoods(neighbourhood_id) ON DELETE SET NULL,
+        file_path TEXT,
+        captured_at DATETIME
+    );
+    """
+    try:
+        with conn:
+            conn.execute(create_table_query)
+        print("Table 'images' is ready.")
+    except Error as e:
+        print(f"Error creating 'images' table: {e}")
+
+def create_cropped_images_table(conn):
+    create_table_query = """
+    CREATE TABLE IF NOT EXISTS cropped_image (
+        cropped_image_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        mapillary_detection_id INTEGER NOT NULL REFERENCES mapillary_detections(id) ON DELETE CASCADE,
+        file_path TEXT NOT NULL
+    );
+    """
+    try:
+        with conn:
+            conn.execute(create_table_query)
+        print("Table 'cropped_image' is ready.")
+    except Error as e:
+        print(f"Error creating 'cropped_image' table: {e}")
+
+def create_body_part_bbox_table(conn):
+    create_table_query = """
+    CREATE TABLE IF NOT EXISTS body_part_bbox (
+        body_part_bbox_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        mapillary_detection_id INTEGER NOT NULL REFERENCES mapillary_detections(id) ON DELETE CASCADE,
+        bbox TEXT, -- JSON or "x,y,w,h"
+        confidence real --as float 
+    );
+    """
+    idx = "CREATE INDEX IF NOT EXISTS idx_bodypart_mapillary ON body_part_bbox(mapillary_detection_id);"
+    try:
+        with conn:
+            conn.execute(create_table_query)
+            conn.execute(idx)
+        print("Table 'body_part_bbox' is ready.")
+    except Error as e:
+        print(f"Error creating 'body_part_bbox' table: {e}")
+
+
+def create_clothing_category_table(conn):
+    create_table_query = """
+    CREATE TABLE IF NOT EXISTS clothing_category (
+        clothing_category_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title VARCHAR(255) UNIQUE NOT NULL
+    );
+    """
+    try:
+        with conn:
+            conn.execute(create_table_query)
+        print("Table 'clothing_category' is ready.")
+    except Error as e:
+        print(f"Error creating 'clothing_category' table: {e}")
+
+def create_clothing_subtype_table(conn):
+    create_table_query = """
+    CREATE TABLE IF NOT EXISTS clothing_subtype (
+        clothing_subtype_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        clothing_category_id INTEGER NOT NULL REFERENCES clothing_category(clothing_category_id) ON DELETE CASCADE,
+        subtype VARCHAR(255) NOT NULL,
+        CHECK (subtype IN (
+            'shirtless',
+            'long sleeve',
+            't-shirt',
+            'top',
+            'blouse',
+            'denim jacket',
+            'cardigan',
+            'rain coat',
+            'winter coat',
+            'shorts',
+            'skirt',
+            'jeans',
+            'leggings',
+            'boots',
+            'heels',
+            'flipflop',
+            'sneaker',
+            'sandals',
+            'cat',
+            'dog',
+            'other'
+        ))
+    );
+    """
+    try:
+        with conn:
+            conn.execute(create_table_query)
+        print("Table 'clothing_subtype' is ready.")
+    except Error as e:
+        print(f"Error creating 'clothing_subtype' table: {e}")
+
+
+def create_clothing_item_table(conn):
+    create_table_query = """
+    CREATE TABLE IF NOT EXISTS clothing_item (
+        clothing_item_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        mapillary_detection_id INTEGER NOT NULL REFERENCES mapillary_detections(id) ON DELETE CASCADE,
+        body_part_bbox_id INTEGER REFERENCES body_part_bbox(body_part_bbox_id) ON DELETE SET NULL,
+        clothing_category_id INTEGER REFERENCES clothing_category(clothing_category_id) ON DELETE SET NULL,
+        clothing_subtype_id INTEGER REFERENCES clothing_subtype(clothing_subtype_id) ON DELETE SET NULL,
+        color VARCHAR(100),
+        confidence real, -- als float  
+        attributes TEXT -- JSON for pattern/material/etc.
+    );
+    """
+    try:
+        with conn:
+            conn.execute(create_table_query)
+        print("Table 'clothing_item' is ready.")
+    except Error as e:
+        print(f"Error creating 'clothing_item' table: {e}")
+
+'''
+# potential indexes for performace: too many causes slow inserts 
+
+def create_all_indexes(conn):
+    """
+    Creates all necessary indexes for the database schema.
+    Can be safely run multiple times — uses IF NOT EXISTS.
+    Intended for after all tables already exist.
+    """
+    index_statements = [
+        # mapillary_detections
+        "CREATE INDEX IF NOT EXISTS idx_mapillary_city ON mapillary_detections(city_id);",
+        "CREATE INDEX IF NOT EXISTS idx_mapillary_original_image ON mapillary_detections(original_image_id);",
+        
+        # images
+        "CREATE INDEX IF NOT EXISTS idx_images_city_captured ON images(city_id, captured_at);",
+        "CREATE INDEX IF NOT EXISTS idx_images_neighbourhood ON images(neighbourhood_id);",
+        
+        # cropped_image
+        "CREATE INDEX IF NOT EXISTS idx_cropped_mapillary ON cropped_image(mapillary_detection_id);",
+        
+        # body_part_bbox
+        "CREATE INDEX IF NOT EXISTS idx_bodypart_mapillary ON body_part_bbox(mapillary_detection_id);",
+        
+        # clothing_subtype
+        "CREATE INDEX IF NOT EXISTS idx_subtype_category ON clothing_subtype(clothing_category_id);",
+        
+        # clothing_item
+        "CREATE INDEX IF NOT EXISTS idx_clothing_mapillary ON clothing_item(mapillary_detection_id);",
+        "CREATE INDEX IF NOT EXISTS idx_clothing_category ON clothing_item(clothing_category_id);",
+        "CREATE INDEX IF NOT EXISTS idx_clothing_subtype ON clothing_item(clothing_subtype_id);",
+    ]
+
+    try:
+        with conn:
+            for sql in index_statements:
+                conn.execute(sql)
+        print(f"All indexes created or verified successfully ({len(index_statements)} total).")
+    except sqlite3.Error as e:
+        print(f"Error creating indexes: {e}")
+
+
+
+
+'''
+
+
