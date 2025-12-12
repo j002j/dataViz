@@ -1,47 +1,29 @@
+import sys
 import os
-# The import works because this is run as `python -m src.db.init_db`
-from src.db.db_utils import get_db_connection, create_cities_table, create_detections_table
 
-# Get connection
-conn = get_db_connection()
-if conn is None:
-    print("Failed to get DB connection for init. Exiting.")
-    exit(1)
+# Add project root to path so imports work correctly
+sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 
-cursor = conn.cursor()
-
-# This path is relative to the /app WORKDIR
-sql_file_path = "src/db/starterkit.session.sql" # <-- CORRECTED PATH
-
-try:
-    with open(sql_file_path, "r") as file:
-        sql_commands = file.read()
-    cursor.execute(sql_commands)
-    conn.commit()
-    print(f"Successfully executed SQL from {sql_file_path}")
-except Exception as e:
-    print(f"Error executing {sql_file_path}: {e}")
-    conn.rollback()
-finally:
-    cursor.close()
-    conn.close()
-    print("Database connection closed.")
+# Import the new consolidated function
+from src.db.db_utils import get_db_connection, create_tables
 
 def main():
     print("Initializing database schema...")
+    
+    # 1. Connect
     conn = get_db_connection()
     if conn is None:
         print("Failed to get DB connection. Exiting.")
         sys.exit(1)
 
-    # This is now the single source of truth for the schema
-    create_cities_table(conn)
-    create_detections_table(conn)
-    # Add future tables here, e.g.:
-    # create_analysis_table(conn)
+    # 2. Create Tables
+    # This creates 'cities', 'mapillary_images', and 'mapillary_detections'
+    # using the new Option B schema (timestamps and separate statuses).
+    create_tables(conn)
 
+    # 3. Close
     conn.close()
-    print("Database schema is ready.")
+    print("Database schema is fully initialized and ready.")
 
 if __name__ == "__main__":
     main()

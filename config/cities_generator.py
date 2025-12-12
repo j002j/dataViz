@@ -14,20 +14,21 @@ import sys
 
 from dotenv import load_dotenv
 
-# We can import from 'src' directly because PYTHONPATH="/app" is set in the Dockerfile
-from src.db.db_utils import get_db_connection, check_or_create_city, create_cities_table
+# --- PATH FIX ---
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.abspath(os.path.join(current_dir, '..'))
+if project_root not in sys.path:
+    sys.path.append(project_root)
+# ----------------
+
+from src.db.db_utils import get_db_connection, create_tables
 
 load_dotenv()
 
-# This is a mandatory requirement from the Nominatim API.
 USER_AGENT = 'CityBoxFinder/1.0 (anton.rabanus@study.hs-duesseldorf.de)'
-# ---------------------
 
 def get_city_bbox(city_name, headers):
-    """
-    Fetches the bounding box for a single city from Nominatim,
-    prioritizing results explicitly typed as 'city'.
-    """
+    """Fetches the bounding box for a single city from Nominatim."""
     url = f"https://nominatim.openstreetmap.org/search?q={requests.utils.quote(city_name)}&format=json&limit=5"
     
     try:
@@ -70,46 +71,106 @@ def get_city_bbox(city_name, headers):
             "bbox": formatted_bbox
         }
         
-        print(f"SUCCESS: Found '{best_match['display_name']}' (Type: {best_match.get('type')})")
+        print(f"SUCCESS: Found '{best_match['display_name']}'")
         return city_data
             
     except requests.RequestException as e:
         print(f"EXCEPTION: {e} for '{city_name}'")
         return None
 
+def check_db_for_search_term(conn, search_term):
+    """Fast check: Returns True if we have already processed this exact search term."""
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM cities WHERE search_term = ?", (search_term,))
+        return cursor.fetchone() is not None
+    except Exception:
+        return False
+
+def check_or_create_city(conn, city_name, city_bbox, search_term, population):
+    """
+    Checks if a city exists. Updates missing data (search_term, population).
+    Creates new entry if not exists.
+    """
+    try:
+        with conn:
+            cursor = conn.cursor()
+            
+            # 1. Check if city exists by UNIQUE NAME (Nominatim name)
+            cursor.execute("SELECT id, download_status, search_term, population FROM cities WHERE name = ?", (city_name,))
+            result = cursor.fetchone()
+            
+            if result:
+                # City exists
+                city_id = result['id']
+                status = result['download_status']
+                
+                # SELF-HEALING: Update missing columns
+                updates = []
+                params = []
+                
+                if not result['search_term']:
+                    updates.append("search_term = ?")
+                    params.append(search_term)
+                
+                if not result['population']:
+                    updates.append("population = ?")
+                    params.append(population)
+                    
+                if updates:
+                    sql_update = f"UPDATE cities SET {', '.join(updates)} WHERE id = ?"
+                    params.append(city_id)
+                    cursor.execute(sql_update, tuple(params))
+                    print(f"  -> Updated existing city data (population/search_term).")
+                
+                return city_id, status, False
+            else:
+                # 2. City doesn't exist, insert it
+                print(f"  -> Adding new city '{city_name}' (Pop: {population}) to database.")
+                sql_insert = """
+                INSERT INTO cities (name, bbox, search_term, population, download_status, analysis_status) 
+                VALUES (?, ?, ?, ?, 'pending', 'pending')
+                """
+                cursor.execute(sql_insert, (city_name, json.dumps(city_bbox), search_term, population))
+                
+                city_id = cursor.lastrowid
+                return city_id, 'pending', True
+                
+    except Exception as e:
+        print(f"Error checking/creating city '{city_name}': {e}")
+        return None, None, False
+
 def load_cities_from_csv(csv_path, min_population):
-    """
-    Loads cities from the Simple Maps worldcities.csv file
-    and filters them by population.
-    """
+    """Loads cities from CSV. Returns list of tuples (search_term, population)."""
     city_list = []
+    
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    if not os.path.exists(csv_path):
+        alt_path = os.path.join(script_dir, os.path.basename(csv_path))
+        if os.path.exists(alt_path):
+            csv_path = alt_path
+    
     print(f"Reading from {csv_path}...")
     try:
-        # The WORKDIR is /app, so the path is relative to that
         with open(csv_path, 'r', encoding='utf-8') as f:
             reader = csv.DictReader(f)
             for row in reader:
                 try:
-                    population_str = row.get('population', '0')
-                    if not population_str:
-                        continue 
-                        
-                    population = float(population_str)
+                    pop_str = row.get('population', '0')
+                    if not pop_str: continue 
+                    
+                    population = float(pop_str)
                     
                     if population >= min_population:
-                        city_name = row['city_ascii'] 
-                        country_name = row['country']
-                        search_term = f"{city_name}, {country_name}"
-                        city_list.append(search_term)
+                        city = row['city_ascii'] 
+                        country = row['country']
+                        term = f"{city}, {country}"
+                        # Append tuple (term, int_population)
+                        city_list.append((term, int(population)))
                 except (ValueError, TypeError):
                     continue 
     except FileNotFoundError:
-        print("="*50)
-        print(f"ERROR: Could not find the file '{csv_path}'.")
-        print("Please download the 'Basic' database from:")
-        print("https://simplemaps.com/data/world-cities")
-        print("And place 'worldcities.csv' in your project root.")
-        print("="*50)
+        print(f"ERROR: Could not find '{csv_path}'.")
         return None
     except Exception as e:
         print(f"Error reading CSV: {e}")
@@ -118,88 +179,72 @@ def load_cities_from_csv(csv_path, min_population):
     return city_list
 
 def main():
-    """
-    Main function to populate the 'cities' table in the database.
-    """
     if USER_AGENT == 'MyCityBoxFinder/1.0 (your-email@example.com)':
-        print("="*50)
         print("ERROR: Please edit the 'USER_AGENT' variable in this script")
-        print("="*50)
         return
-        
-    # --- load_dotenv() was removed ---
 
     # --- Connect to Database ---
     print("Initializing database connection...")
     db_conn = get_db_connection()
     if db_conn is None:
-        print("Failed to connect to database. Exiting.")
         return
         
-    # Ensure 'cities' table exists
-    create_cities_table(db_conn)
+    create_tables(db_conn)
 
-    # --- Load Cities from CSV ---
-    MIN_POPULATION = 250000 # cities with pop >= 250 000 inhabitants
-    # This path is relative to the /app WORKDIR
+    # --- Load Cities ---
+    MIN_POPULATION = 500000 
     INPUT_CSV = "config/worldcities.csv"
+    city_data_list = load_cities_from_csv(INPUT_CSV, MIN_POPULATION)
     
-    print(f"Loading cities from '{INPUT_CSV}' with population >= {MIN_POPULATION}...")
-    city_list = load_cities_from_csv(INPUT_CSV, MIN_POPULATION)
-    
-    if city_list is None:
-        print("Exiting due to error.")
+    if city_data_list is None:
         db_conn.close()
         return
         
-    city_list = sorted(list(set(city_list)))
-    print(f"Found {len(city_list)} unique cities matching criteria.")
+    # Sort and Deduplicate
+    city_data_list = sorted(list(set(city_data_list)), key=lambda x: x[0])
+    print(f"Found {len(city_data_list)} unique cities matching criteria.")
 
-    # --- Process and Save Cities to DB ---
+    # --- Process ---
     headers = {'User-Agent': USER_AGENT}
-    cities_added = 0
-    cities_skipped = 0
-
-    print(f"Starting geocoding and database insertion for {len(city_list)} cities...")
     
-    for i, city in enumerate(city_list):
-        print(f"\n({i + 1}/{len(city_list)}) Processing: '{city}'")
+    print(f"Starting geocoding...")
+    
+    for i, (city_search_term, population) in enumerate(city_data_list):
+        progress = f"({i + 1}/{len(city_data_list)})"
         
-        city_data = get_city_bbox(city, headers)
+        # --- Check DB first (Fast Skip) ---
+        if check_db_for_search_term(db_conn, city_search_term):
+            # We assume if it's in DB, the self-healing logic in previous runs fixed the population
+            # If you want to force check population update even for skipped ones,
+            # you'd need to remove this `continue` and rely on check_or_create_city logic.
+            # But for speed, we skip if search_term is known.
+            print(f"{progress} Skipping '{city_search_term}' (Already in DB)")
+            continue
+
+        print(f"\n{progress} Processing: '{city_search_term}' (Pop: {population})")
+        
+        city_data = get_city_bbox(city_search_term, headers)
         
         if city_data:
-            # --- SAVE TO DATABASE ---
-            # Unpack the new 3-value tuple
-            city_id, is_scanned, was_created = check_or_create_city(
+            city_id, status, was_created = check_or_create_city(
                 db_conn, 
                 city_data['name'], 
-                city_data['bbox']
+                city_data['bbox'],
+                city_search_term,
+                population
             )
             
-            if city_id and is_scanned:
-                # Case 1: City exists and is DONE
-                print("  -> City already exists and is marked as scanned. Skipping.")
-                cities_skipped += 1
+            if city_id and status == 'done':
+                print("  -> City exists and is DONE.")
             elif city_id and was_created:
-                # Case 2: City was just added
-                print("  -> Successfully added new city.")
-                cities_added += 1
-            elif city_id and not was_created and not is_scanned:
-                # Case 3: City exists, but is not scanned
-                print("  -> City already in database, pending scan.")
-                cities_added += 1 # Still counts as a city to be processed
-            else:
-                # Case 4: Error
-                print("  -> Failed to add or find city in database.")
+                print("  -> New city added (Status: pending).")
+            elif city_id:
+                print(f"  -> City exists (Status: {status}).")
         
-        # --- IMPORTANT: RATE LIMIT ---
         time.sleep(1)
-        # -----------------------------
 
     db_conn.close()
-    print("\n==================================================")
-    print("Database connection closed.")
-    print(f"Process complete. Added {cities_added} new cities. Skipped {cities_skipped}.")
+    print("Process complete.")
 
 if __name__ == "__main__":
     main()
