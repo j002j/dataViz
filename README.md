@@ -1,5 +1,6 @@
 A project inspired by the meme starterkits but with connected to data science.
  [Link](https://www.instagram.com/p/CjIG-0EKhWb/?utm_source=ig_web_copy_link)
+ [Link](/static/assets/kit_ddorf_wdr.png)
 
 # Urban Fashion Mapping Pipeline
 
@@ -171,5 +172,7 @@ After the pipeline has run, you can connect directly to the database to see the 
       npm run dev
     open in browser: http://localhost:5173/
 
+  # for UI / sveltKit:
+  install VS-code plug in: "Svelte for VS Code"
 
     
