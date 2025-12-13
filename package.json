@@ -1,0 +1,16 @@
+{
+  "dependencies": {
+    "@cosmos.gl/graph": "^2.6.2"
+  },
+  "name": "starterkit",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^6.4.1"
+  }
+}

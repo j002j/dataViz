@@ -221,3 +221,7 @@ __marimo__/
 *.jpg
 *.sql
 *.db
+
+#dependencies
+#node-modules for the Point cloud: run npm install @cosmos.gl/graph
+node_modules/

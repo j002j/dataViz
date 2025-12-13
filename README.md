@@ -161,3 +161,15 @@ After the pipeline has run, you can connect directly to the database to see the 
     SELECT * FROM cities
     WHERE scanned = TRUE;
     ```
+
+    # for the Poitcloud
+    https://cosmos.gl/?path=/docs/welcome-to-cosmos-gl--docs
+    npm install @cosmos.gl/graph
+
+    to test locally, run:    
+      npm install -D vite
+      npm run dev
+    open in browser: http://localhost:5173/
+
+
+    
