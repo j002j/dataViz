@@ -175,4 +175,12 @@ After the pipeline has run, you can connect directly to the database to see the 
   # for UI / sveltKit:
   install VS-code plug in: "Svelte for VS Code"
 
+  add svelt set up 
+
+install tailwind following: https://tailwindcss.com/docs/installation/framework-guides/sveltekit
+  npm install tailwindcss @tailwindcss/vite
+
+  npm install svelte typescript vite @sveltejs/kit@latest --save-dev
+
+
     
