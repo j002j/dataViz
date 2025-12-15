@@ -27,15 +27,16 @@ export {};
 
 declare module "$app/types" {
 	export interface AppTypes {
-		RouteId(): "/";
+		RouteId(): "/" | "/globe";
 		RouteParams(): {
 			
 		};
 		LayoutParams(): {
-			"/": Record<string, never>
+			"/": Record<string, never>;
+			"/globe": Record<string, never>
 		};
-		Pathname(): "/";
+		Pathname(): "/" | "/globe" | "/globe/";
 		ResolvedPathname(): `${"" | `/${string}`}${ReturnType<AppTypes['Pathname']>}`;
-		Asset(): "/assets/kit_ddorf_wdr.png" | string & {};
+		Asset(): "/assets/kit_ddorf_wdr.png" | "/button-background.jpg" | "/square.gif" | string & {};
 	}
 }
