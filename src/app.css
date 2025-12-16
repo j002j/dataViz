@@ -1,1 +1,52 @@
 @import "tailwindcss";
+
+.box {
+    /*somehow reuse this @ in btn class ????? to make it cleaner*/
+    @apply font-bold py-4 px-8 text-2xl;
+    text-decoration: none;
+    outline: solid;
+    outline-color: rgb(47, 255, 61);
+    color: rgb(47, 255, 61);
+}
+
+.btn {
+    background-image: url("/button-background.jpg");
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center;
+    color: rgb(47, 255, 61);
+    @apply font-bold py-4 px-8 text-2xl;
+    text-decoration: none;
+    outline: solid;
+    outline-color: rgb(47, 255, 61);
+}
+
+.btn-exit {
+    background-image: url("/button-background.jpg");
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center;
+    color: rgb(47, 255, 61);
+    font-size: 12pt;
+    padding: 4pt;
+    text-decoration: none;
+    outline: solid;
+    outline-color: rgb(47, 255, 61);
+
+}
+
+.box-label {
+    @apply absolute top-0 left-0 text-xs font-mono px-1 py-0.5;
+    background-color: rgb(47, 255, 61);
+    color: black;
+    /* Verschiebt das Label leicht nach oben/links außerhalb des Rahmens */
+    transform: translate(-2px, -180%);
+}
+
+.exit-box-label {
+    @apply absolute top-0 left-0 text-xs font-mono px-1 py-0.5;
+    background-color: rgb(47, 255, 61);
+    color: black;
+    /* Verschiebt das Label leicht nach oben/links außerhalb des Rahmens */
+    transform: translate(-2px, -100%);
+}

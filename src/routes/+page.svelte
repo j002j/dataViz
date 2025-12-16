@@ -1,17 +1,34 @@
-<!-- <h1 class="text-3xl font-bold underline text-white">Hello world!</h1>
-<p>TODO...</p>
-<a href="/globe">to the globe</a> -->
-
 <div class="main-container">
-    <div id="squares-background" class="text-green-500 font-bold">
-        <h1>Starterkist</h1>
+    <div id="squares-background">
+        <div
+            class="text-bold flex flex-col items-center justify-center pt-12 pl-12"
+            id="title"
+        >
+            <div class="relative inline-block" id="title">
+                <span class="box-label">title</span>
+                <span class="box">STARTERKITS</span>
+            </div>
+        </div>
+
+        <div
+            class="text-bold flex flex-col items-center justify-center pt-12 pl-12"
+            id="title"
+        >
+            <div class="relative inline-block" id="title">
+                <span class="box-label">text</span>
+                <span class="box">STARTERKITS from Around the WORLD</span>
+            </div>
+        </div>
     </div>
+
     <div
         id="menue-landingpage"
         class="text-bold flex flex-col items-center justify-center"
     >
-        <!-- <h1>globe</h1>-->
-        <a href="/globe" class="btn">ENTER</a>
+        <div class="relative inline-block">
+            <span class="box-label">button</span>
+            <a href="/globe" class="btn">ENTER</a>
+        </div>
     </div>
 </div>
 
@@ -26,6 +43,8 @@
 
     #squares-background {
         background-image: url("/square.gif");
+        background-repeat: no-repeat;
+        background-size: cover;
         display: flex;
         felx-direction: column;
         height: 100vh;
@@ -35,15 +54,7 @@
         background-color: black;
         height: 100vh;
     }
-
-    .btn {
-        background-image: url("/button-background.jpg");
-        background-repeat: no-repeat;
-        background-size: cover;
-        //font-color: rgb(47, 255, 61);
-        @apply font-bold py-4 px-8 text-2xl text-green-500;
-        text-decoration: none;
-        outline: solid;
-        outline-color: rgb(47, 255, 61);
+    #title {
+        float: right;
     }
 </style>
