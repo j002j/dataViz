@@ -163,24 +163,42 @@ After the pipeline has run, you can connect directly to the database to see the 
     WHERE scanned = TRUE;
     ```
 
-    # for the Poitcloud
-    https://cosmos.gl/?path=/docs/welcome-to-cosmos-gl--docs
-    npm install @cosmos.gl/graph
-
-    to test locally, run:    
-      npm install -D vite
-      npm run dev
-    open in browser: http://localhost:5173/
+  
 
   # for UI / sveltKit:
+  Tech Stack
+- **Framework:** SvelteKit (v2.x) using Svelte 5 (Runes)
+- **Styling:** Tailwind CSS (v4.x)
+- **Visualization:** @cosmos.gl/graph (v2.6.2)
+- **Runtime:** Node.js
+
   install VS-code plug in: "Svelte for VS Code"
 
   add svelt set up 
 
-install tailwind following: https://tailwindcss.com/docs/installation/framework-guides/sveltekit
-  npm install tailwindcss @tailwindcss/vite
+  install tailwind following: https://tailwindcss.com/docs/installation/framework-guides/sveltekit
+    npm install tailwindcss @tailwindcss/vite
 
-  npm install svelte typescript vite @sveltejs/kit@latest --save-dev
+    npm install svelte typescript vite @sveltejs/kit@latest --save-dev
+
+    https://cosmos.gl/?path=/docs/welcome-to-cosmos-gl--docs
+    npm install @cosmos.gl/graph
+
+
+   ##  Project Structure
+      The project follows the standard SvelteKit structure with a focus on modular visualization components:
+        - src/routes/: Contains the application pages
+          - +page.svelte: The interactive landing page
+          - globe/+page.svelte: The main fashion data visualization (point cloud)
+        - src/lib/: Reusable code
+          - visualization/: Contains CosmosCanvas.svelte, the Svelte wrapper for the Cosmos.gl engine.
+          - components/: General UI elements (buttons, filters, etc.).
+        - static/: Static assets (images, icons, and fashion data samples).
+
+ # Run the development server:   
+    if not yet installed: npm install -D vite
+    'npm run dev'
+    Once started, view the project in your browser at: http://localhost:5173/
 
 
     

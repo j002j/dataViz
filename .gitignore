@@ -227,3 +227,5 @@ __marimo__/
 node_modules/
 
 .svelte-kit/
+.svelte-kit/ambient.d.ts
+.svelte-kit/non-ambient.d.ts
