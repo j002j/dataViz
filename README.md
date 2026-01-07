@@ -185,20 +185,27 @@ After the pipeline has run, you can connect directly to the database to see the 
     npm install @cosmos.gl/graph
 
 
-   ##  Project Structure
-      The project follows the standard SvelteKit structure with a focus on modular visualization components:
-        - src/routes/: Contains the application pages
-          - +page.svelte: The interactive landing page
-          - globe/+page.svelte: The main fashion data visualization (point cloud)
-        - src/lib/: Reusable code
-          - visualization/: Contains CosmosCanvas.svelte, the Svelte wrapper for the Cosmos.gl engine.
-          - components/: General UI elements (buttons, filters, etc.).
-        - static/: Static assets (images, icons, and fashion data samples).
+  ##  Project Structure
+    The project follows the standard SvelteKit structure with a focus on modular visualization components:
+      * src/routes/: Contains the application pages
+        * +page.svelte: The interactive landing page
+        * globe/+page.svelte: The main fashion data visualization (point cloud)
+      * src/lib/: Reusable code
+        * visualization/: Contains CosmosCanvas.svelte, the Svelte wrapper for the Cosmos.gl engine.
+        * components/: General UI elements (buttons, filters, etc.).
+      * static/: Static assets (images, icons, and fashion data samples).
 
- # Run the development server:   
+  ## Run the development server:   
     if not yet installed: npm install -D vite
     'npm run dev'
     Once started, view the project in your browser at: http://localhost:5173/
 
+  ##  for connecting backend and frontend to display the Data as point cloud
+    We are using flask and flask-cors. To install, run: 
+      pip install flask flask-cors
 
-    
+  the app.py as the flask backend 
+  we use flask-cors to actually be able let the frontent (sevlte) get the data form teh backend.
+  to check if bridging the fornt and back end ah worked run:
+    python app.py 
+    and open http://127.0.0.1:5000/test/point (or woth the designated rout) in the browser. you should see a JSON with the data points.
