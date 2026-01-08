@@ -209,3 +209,5 @@ After the pipeline has run, you can connect directly to the database to see the 
   to check if bridging the fornt and back end ah worked run:
     python app.py 
     and open http://127.0.0.1:5000/test/point (or woth the designated rout) in the browser. you should see a JSON with the data points.
+
+    TEST buggy branch 
