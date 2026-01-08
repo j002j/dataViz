@@ -3,11 +3,29 @@
   console.log("loaded");
   import { onMount } from "svelte";
   import { Graph } from "@cosmos.gl/graph";
+  import Stats from "stats.js";
 
   let containerElement;
   let graph;
+  var stats = new Stats(); // for showing performance
 
-  // STRATEGIES: GRAPH LAYOUT
+  //for overlooking performance:
+  stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
+  document.body.appendChild(stats.dom);
+
+  function animate() {
+    stats.begin();
+
+    // monitored code goes here
+
+    stats.end();
+
+    requestAnimationFrame(animate);
+  }
+  requestAnimationFrame(animate);
+
+  //////////////////////////////////////////////////////
+  ///////////// STRATEGIES: GRAPH LAYOUT
   //dummy data from cosmos.gl example
   const createDummyGrid = () => {
     console.log("Creating Dummy Data...");
@@ -110,7 +128,7 @@
       // //graph.setPointColors(colors);
       // graph.setLinks(links);
 
-      // display points accoringto ID Layout
+      // // display points accoringto ID Layout
       const layout = getIDGridLayout(data);
       graph.setPointPositions(layout.positions);
       graph.setLinks(layout.links);

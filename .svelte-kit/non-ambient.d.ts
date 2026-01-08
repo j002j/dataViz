@@ -37,6 +37,6 @@ declare module "$app/types" {
 		};
 		Pathname(): "/" | "/globe" | "/globe/";
 		ResolvedPathname(): `${"" | `/${string}`}${ReturnType<AppTypes['Pathname']>}`;
-		Asset(): "/assets/kit_ddorf_wdr.png" | "/button-background.jpg" | "/square.gif" | "/styles/main.css" | string & {};
+		Asset(): "/.DS_Store" | "/assets/kit_ddorf_wdr.png" | "/button-background.jpg" | "/square.gif" | "/styles/main.css" | string & {};
 	}
 }

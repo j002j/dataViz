@@ -2,6 +2,7 @@
   "dependencies": {
     "@cosmos.gl/graph": "^2.6.2",
     "@tailwindcss/vite": "^4.1.18",
+    "stats.js": "^0.17.0",
     "tailwindcss": "^4.1.18"
   },
   "name": "starterkit",

@@ -24,7 +24,7 @@ export const options = {
 		app: ({ head, body, assets, nonce, env }) => "<!DOCTYPE html>\n<html lang=\"en\">\n\n<head>\n    <meta charset=\"utf-8\" />\n    " + head + " <!-- <link> and <script> elements needed by the app, plus any < svelte: head > content-->\n</head>\n\n<body data-sveltekit-preload-data=\"hover\">\n    <div style=\"display: contents\">" + body + "</div>\n</body>\n\n</html>",
 		error: ({ status, message }) => "<!DOCTYPE html>\n<html lang=\"en\">\n\n<head>\n    <meta charset=\"utf-8\" />\n    %sveltekit.head% <!-- <link> and <script> elements needed by the app, plus any < svelte: head > content-->\n</head>\n\n<body data-sveltekit-preload-data=\"hover\">\n    <div style=\"display: contents\">" + status + "</div>\n    <div style=\"display: contents\">" + message + "</div>\n</body>\n\n</html>"
 	},
-	version_hash: "1ydsbed"
+	version_hash: "4t9rss"
 };
 
 export async function get_hooks() {
