@@ -9,6 +9,11 @@ ultralytics
 opencv-python-headless
 requests
 numpy
+scikit-learn
+numba
+tqdm
+pandas
+
 
 # Database & Config
 psycopg2-binary
