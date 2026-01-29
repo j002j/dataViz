@@ -10,6 +10,9 @@
  requests
  numpy
  pandas
+ tqdm
+ quadfeather
+ polars
  
  # Database & Config
  python-dotenv

@@ -1,15 +1,3 @@
 {
-    "sqltools.connections": [
-        {
-            "ssh": "Disabled",
-            "previewLimit": 50,
-            "server": "localhost",
-            "port": 5432,
-            "driver": "PostgreSQL",
-            "name": "Starterkit",
-            "database": "starterkit_db",
-            "username": "jenny"
-        }
-    ],
     "python-envs.pythonProjects": []
 }
