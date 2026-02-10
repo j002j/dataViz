@@ -2,6 +2,15 @@
 
 Project inspired by meme starterkits, applying data science to urban fashion trends by analyzing street-level imagery and generating 2D semantic embedding spaces.
 
+# Structure
+The project follows the standard SvelteKit structure with a focus on modular visualization components: 
+* src/routes/: Contains the application pages 
+* +page.svelte: The interactive landing page 
+* globe/+page.svelte: The main fashion data visualization (point cloud)
+* src/lib/: Reusable code * visualization/: Contains CosmosCanvas.svelte, the Svelte wrapper for the Cosmos.gl engine. 
+* components/: General UI elements (buttons, filters, etc.).
+* static/: Static assets (images, icons, and fashion data samples).
+
 ## Pipeline Implementation
 
 The system consists of independent modules synchronized via a SQLite database `pipeline.db`.
@@ -45,13 +54,7 @@ The system consists of independent modules synchronized via a SQLite database `p
 
 ## Frontend & UI
 
-A Svelte 5 application utilizing Cosmos.gl for high-performance WebGL point cloud rendering.
-
-### Architecture
-
-* **Physics-Driven Graph:** Transitioned from static geometric layouts to a force-directed system. Points represent clothing items; layout is determined by simulated springs and repulsion.
-* **Lifecycle Management:** Uses Svelte `onMount` and `bind:this` to manage the imperative Cosmos.gl engine within a declarative framework.
-* **Memory Management:** Implements `graph.destroy()` on component unmount to clear GPU resources.
+A Svelte 5 application utilizing Cosmos.gl for high-performance WebGL point cloud rendering. 
 
 ### Tech Stack
 
@@ -60,6 +63,26 @@ A Svelte 5 application utilizing Cosmos.gl for high-performance WebGL point clou
 | svelte | 5.46.0 | Snippet/Children patterns for layout management |
 | @cosmos.gl/graph | 2.6.2 | GPU-accelerated graph simulation |
 | vite | 6.4.1 | Build and import analysis |
+### Architecture
+
+* **Physics-Driven Graph:** Transitioned from static geometric layouts to a force-directed system. Points represent clothing items; layout is determined by simulated springs and repulsion.
+* **Lifecycle Management:** Uses Svelte `onMount` and `bind:this` to manage the imperative Cosmos.gl engine within a declarative framework.
+* **Memory Management:** Implements `graph.destroy()` on component unmount to clear GPU resources.
+
+### Run the development server:
+To start the developemt server to test the pointclous locally. 
+If not yet installed: 
+'npm install -D vite 'npm run dev'
+
+We are using flask and flask-cors for connecting backend and frontend to display the Data as point cloud.
+To install, run: 
+'pip install flask flask-cors'
+Then run the scirpt to establish the connection to the database (data/pipline.db)
+'python app.py'
+
+To start the vite server for teh forntend run:
+'npm run dev'
+Open http://localhost:5173/ in the bowser and the website should appear.
 
 ---
 

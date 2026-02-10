@@ -7,4 +7,10 @@ export default defineConfig({
         tailwindcss(),
         sveltekit(),
     ],
+    // server: {
+    //     fs: {
+    //         // Erlaubt Vite den Zugriff auf den gesamten Workspace
+    //         allow: ['..']
+    //     }
+    // }
 });

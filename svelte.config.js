@@ -12,7 +12,7 @@ const config = {
         // Der Adapter ist dafür zuständig, das SvelteKit-Projekt für die Deployment-Umgebung anzupassen.
         // `adapter-auto` ist der Standard, der versucht, die Umgebung automatisch zu erkennen (Vercel, Netlify, Node.js, etc.).
         adapter: adapter()
-    }
+    },
 };
 
 export default config;

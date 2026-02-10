@@ -46,7 +46,7 @@
     @reference "tailwindcss";
 
     #squares-background {
-        background-image: url("/square.gif");
+        //background-image: url("/square.gif");
         background-repeat: no-repeat;
         background-size: cover;
     }
