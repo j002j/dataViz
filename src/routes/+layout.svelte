@@ -10,7 +10,7 @@
         <h1 class="text-2xl font-black">STARTERKITS</h1>
     </header>
 
-    <main class="flex-grow flex flex-col">
+    <main class="flex-grow flex flex-col min-h-0">
         {@render children()}
     </main>
 

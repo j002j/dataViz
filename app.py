@@ -3,6 +3,7 @@ from flask_cors import CORS
 import sqlite3
 from datetime import datetime
 import os
+import csv
 
 app = Flask(__name__)
 CORS(app)
@@ -70,6 +71,47 @@ def get_data_count():
         #"data": output
     })
 
+
+@app.route("/api/items")
+def get_items():
+    rows = []
+    with open("data/item_feature_matrix_formatted.csv", encoding="utf-8-sig") as f: #ignore BOM character in the first column name
+        reader = csv.DictReader(f, delimiter=';') #split the columns at every semicolon
+        print(reader.fieldnames) #to check the column names in the CSV file
+        for row in reader:
+            try:
+                rows.append({
+                    "id": row["id"], #to handle the BOM character in the first column name
+                    "x": float(row["x"]),
+                    "y": float(row["y"]),
+                    "category": int(row["category"]),
+                    "image_id": row["image_id"],
+                    "crop_path": row["crop_path"]
+                })
+            except(ValueError, KeyError):  
+                continue
+    return jsonify(rows)
+
+@app.route("/api/outfits")
+def get_outfits():
+    # same pattern for outfit_feature_matrix.csv
+    rows = []
+    with open("data/outfit_feature_matrix_formatted.csv", encoding="utf-8-sig") as f: #ignore BOM character in the first column name
+        reader = csv.DictReader(f, delimiter=';') #split the columns at every semicolon
+        print(reader.fieldnames) #to check the column names in the CSV file
+        for row in reader:
+            try:
+                rows.append({
+                    "id": row["id"], 
+                    "x": float(row["x"]),
+                    "y": float(row["y"]),
+                    "image_id": row["image_id"],
+                    "crop_path": row["crop_path"],
+                    "category_list": row["category_list"]
+                })
+            except(ValueError, KeyError):
+                continue
+    return jsonify(rows)
 
 @app.route("/image")
 def get_images():

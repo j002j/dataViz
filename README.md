@@ -72,17 +72,30 @@ A Svelte 5 application utilizing Cosmos.gl for high-performance WebGL point clou
 ### Run the development server:
 To start the developemt server to test the pointclous locally. 
 If not yet installed: 
-'npm install -D vite 'npm run dev'
+```ini
+npm install -D vite 'npm run dev
+```
 
 We are using flask and flask-cors for connecting backend and frontend to display the Data as point cloud.
 To install, run: 
 'pip install flask flask-cors'
 Then run the scirpt to establish the connection to the database (data/pipline.db)
-'python app.py'
+```ini
+python app.py
+```
 
 To start the vite server for teh forntend run:
-'npm run dev'
+```ini
+npm run dev
+```
 Open http://localhost:5173/ in the bowser and the website should appear.
+
+### Switching to embedding atlas 
+Switing from consmos.gl to embedding atlas 
+Install the install the library:
+```ini
+npm install embedding-atlas
+```
 
 ---
 

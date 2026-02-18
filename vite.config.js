@@ -7,6 +7,9 @@ export default defineConfig({
         tailwindcss(),
         sveltekit(),
     ],
+    optimizeDeps: {
+        exclude: ['embedding-atlas']
+    }
     // server: {
     //     fs: {
     //         // Erlaubt Vite den Zugriff auf den gesamten Workspace
