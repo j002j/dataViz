@@ -8,6 +8,13 @@
     let containerHeight = $state(800);
     let containerEl;
 
+    const viewOptions = {
+        // [Red, Green, Blue, Alpha]: each 0.0 to 1.0
+        // backgroundColor: "#334155", // This is Tailwind's slate-700 hex code
+        clearColor: [0.2, 0.255, 0.333, 1],
+        opacity: 1,
+    };
+
     onMount(async () => {
         // Watch container size and feed real pixel dimensions to EmbeddingView
         const observer = new ResizeObserver((entries) => {
@@ -41,7 +48,7 @@
 
 <div
     bind:this={containerEl}
-    class="flex-grow min-h-0 w-full"
+    class="flex-grow min-h-0 w-full bg-slate-700"
     style="height: 100%;"
 >
     {#if viewData}
@@ -49,6 +56,7 @@
             data={viewData}
             width={containerWidth}
             height={containerHeight}
+            options={viewOptions}
             {tooltip}
             onTooltip={(v) => (tooltip = v)}
         />
@@ -138,3 +146,12 @@
 {:else}
     <p>Loading data...</p>
 {/if} -->
+
+<style>
+    /* target the canvas inside the EmbeddingView */
+    :global(canvas) {
+        background: transparent !important;
+        /* transparnet greey overlay: */
+        /* mix-blend-mode: multiply; */
+    }
+</style>
