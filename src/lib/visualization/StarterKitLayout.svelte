@@ -12,8 +12,9 @@
 <div class="starterkit-root">
     <!-- Top bar -->
     <div class="topbar">
-        <span class="brand">STARTERKIT</span>
+        <a href="/" class="brand">STARTERKIT</a>
         <div class="tab-group">
+            <a href="/" class="tab-btn">home</a>
             <button
                 class="tab-btn"
                 class:active={activeTab === "ITEMS"}
@@ -21,8 +22,8 @@
             >
             <button
                 class="tab-btn"
-                class:active={activeTab === "KITS"}
-                onclick={() => (activeTab = "KITS")}>KITS</button
+                class:active={activeTab === "OUTFITS"}
+                onclick={() => (activeTab = "OUTFITS")}>OUTFITS</button
             >
         </div>
     </div>
@@ -51,7 +52,7 @@
 
         <!-- Pointcloud canvas -->
         <div class="canvas-area">
-            <EmbeddingView />
+            <EmbeddingView type={activeTab} />
         </div>
 
         <!-- Stats tab trigger (right edge of canvas, actually bottom) -->
@@ -209,8 +210,8 @@
     .edge-tab-left {
         left: 0;
         top: 50%;
-        transform: translateY(-50%) rotate(-90deg) translateX(-50%);
-        transform-origin: left center;
+        transform: rotate(-90deg) translateX(-50%);
+        transform-origin: top left;
         padding: 4px 10px;
         border-radius: 0 0 4px 4px;
         writing-mode: horizontal-tb; /* keep text horizontal after rotate */

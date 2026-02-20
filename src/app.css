@@ -7,6 +7,7 @@
     outline: solid;
     outline-color: rgb(47, 255, 61);
     color: rgb(47, 255, 61);
+    position: relative
 }
 
 .btn {
@@ -14,11 +15,12 @@
     background-repeat: no-repeat;
     background-size: cover;
     background-position: center;
-    color: rgb(47, 255, 61);
+    /* color: rgb(47, 255, 61); */
     @apply font-bold py-4 px-8 text-2xl;
     text-decoration: none;
     outline: solid;
     outline-color: rgb(47, 255, 61);
+    position: relative
 }
 
 .btn-exit {
@@ -36,11 +38,24 @@
 }
 
 .box-label {
-    @apply absolute top-0 left-0 text-xs font-mono px-1 py-0.5;
+    position: absolute;
+    top: -1.4em;
+    left: -2px;
     background-color: rgb(47, 255, 61);
     color: black;
-    /* Verschiebt das Label leicht nach oben/links außerhalb des Rahmens */
-    transform: translate(-2px, -180%);
+    font-size: 0.7rem;
+    font-family: monospace;
+    padding: 0 4px;
+    line-height: 1.4;
+    white-space: nowrap;
+    /* @apply absolute top-0 left-0 text-xs font-mono px-1 py-0.5;
+    position: absolute;
+    background-color: rgb(47, 255, 61);
+    top: -1.4em;
+    left: -2px;
+    color: black;
+    line-height: 1; */
+    /* transform: translate(-2px, -180%); */
 }
 
 .exit-box-label {
