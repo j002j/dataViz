@@ -1,5 +1,5 @@
-<!-- Real-data form pipline.db: point cloud is now implemented as a force-directed graph system -->
 <script>
+  // <!-- Real-data form pipline.db: point cloud is now implemented as a force-directed graph system -->
   console.log("loaded");
   import { onMount } from "svelte";
   import { Graph } from "@cosmos.gl/graph";
