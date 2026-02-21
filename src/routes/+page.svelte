@@ -7,12 +7,12 @@
     <div id="hero">
         <div class="gif-bg" style="background-image: url({bg});"></div>
         <div class="hero-content">
-            <div class="label-box">
+            <div id="title-box" class="label-box">
                 <span class="box-label">title</span>
                 <span class="box">STARTERKIT</span>
             </div>
 
-            <div class="label-box">
+            <div id="subtitle-box" class="label-box">
                 <span class="box-label">text</span>
                 <span class="box">fits from around the world</span>
             </div>
@@ -24,12 +24,16 @@
         <div class="menu-inner">
             <div class="label-box">
                 <span class="box-label">button</span>
-                <a href="/globe" class="btn btn-full">EXPLORE 1</a>
+                <a href="/globe" class="btn btn-full">EXPLORE</a>
             </div>
 
             <div class="label-box">
                 <span class="box-label">button</span>
                 <a href="/about" class="btn btn-full">ABOUT</a>
+            </div>
+            <div class="label-box">
+                <span class="box-label">button</span>
+                <a href="/about" class="btn btn-full">CREDITS</a>
             </div>
         </div>
     </div>
@@ -81,6 +85,13 @@
         display: flex;
         align-items: center;
         justify-content: center;
+    }
+
+    #title-box {
+        position: absolute;
+        right: clamp(1rem, 5vw, 4rem);
+        top: 50%;
+        transform: translateY(-50%);
     }
 
     .menu-inner {

@@ -12,9 +12,13 @@
 <div class="starterkit-root">
     <!-- Top bar -->
     <div class="topbar">
-        <a href="/" class="brand">STARTERKIT</a>
+        <a
+            href="/"
+            class="test-[0.75rem] font-bold tracking-widest text-neutral-400"
+            >STARTERKIT</a
+        >
         <div class="tab-group">
-            <a href="/" class="tab-btn">home</a>
+            <a href="/" class="tab-btn">HOME</a>
             <button
                 class="tab-btn"
                 class:active={activeTab === "ITEMS"}
@@ -103,12 +107,12 @@
         z-index: 10;
     }
 
-    .brand {
+    /* .brand {
         font-size: 0.75rem;
         font-weight: 700;
         letter-spacing: 0.1em;
         color: #aaa;
-    }
+    } */
 
     .tab-group {
         display: flex;

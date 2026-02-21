@@ -7,7 +7,9 @@
     outline: solid;
     outline-color: rgb(47, 255, 61);
     color: rgb(47, 255, 61);
-    position: relative
+    position: relative;
+    padding-block: 0.5%;
+    background: black;
 }
 
 .btn {
@@ -39,8 +41,9 @@
 
 .box-label {
     position: absolute;
-    top: -1.4em;
-    left: -2px;
+    top: 0;
+    left: -3px;
+    transform: translateY(-100%);
     background-color: rgb(47, 255, 61);
     color: black;
     font-size: 0.7rem;

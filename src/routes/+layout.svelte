@@ -1,13 +1,19 @@
 <script>
     import "../app.css";
+    import { page } from "$app/state";
+
     let { children } = $props();
+
+    const hindeFooterOn = [
+        "/lib/visualization/StarterKitLayout.svelte",
+        "/lib/visualization/EmbeddingView.svelte",
+    ];
 </script>
 
 {@render children()}
 
-<!-- 
-<div class="flex flex-col min-h-screen bg-gray-100">
-    <main class="flex-grow flex flex-col min-h-0">
-        {@render children()}
-    </main>
-</div> -->
+{#if !hindeFooterOn.includes(page.url.pathname)}
+    <footer class="bg-black text-green-700 p-5 font-mono text-sm text-center">
+        <p>©2026 Jennifer Janac and Anton Rabanus</p>
+    </footer>
+{/if}

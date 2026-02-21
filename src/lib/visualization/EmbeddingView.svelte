@@ -1,6 +1,6 @@
 <!-- workflow: 
 1. querySelection finds the nearest point when you click
-2.  library calls onSelection with that point (which you're ignoring now) .. for debugging 
+2. library calls onSelection with that point (which you're ignoring now) .. for debugging 
 3. Meanwhile your onclick={handleCanvasClick} on the outer div fires too
 4. handleCanvasClick reads whatever is in tooltip and sets selectedPoint
 -->
@@ -21,7 +21,7 @@
     let rawData = [];
 
     const viewOptions = {
-        clearColor: [0.2, 0.255, 0.333, 1],
+        colorScheme: "dark",
         opacity: 1,
         pointSize: 2,
     };
@@ -106,7 +106,7 @@
 
 <div
     bind:this={containerEl}
-    class="flex-grow min-h-0 w-full bg-slate-700"
+    class="flex-grow min-h-0 w-full bg-neutral-800"
     style="height: 100%;"
     onclick={handleCanvasClick}
 >
@@ -141,7 +141,7 @@
             }}
         />
     {:else}
-        <div class="flex items-center justify-center h-full text-gray-500">
+        <div class="flex items-center justify-center h-full text-green-400">
             Loading data...
         </div>
     {/if}
