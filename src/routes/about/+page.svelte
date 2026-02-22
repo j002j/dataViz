@@ -1,6 +1,6 @@
 <script>
     import { onMount } from "svelte";
-    import panorama from "$lib/assets/panorama.jpeg";
+    import panorama from "$lib/assets/panorama_people.jpg";
 
     let translateX = $state(0);
 
@@ -41,12 +41,12 @@
     class="relative z-10 bg-[#111] text-[#2fff3d] px-8 py-24 md:px-24 lg:px-48 min-h-screen font-sans"
 >
     <h2
-        class="text-center font-mono text-4xl md:text-5xl font-black uppercase tracking-tighter mb-16"
+        class="text-center font-bold text-4xl md:text-5xl font-black uppercase tracking-nromal mb-16"
     >
         Data Driven Memes
     </h2>
 
-    <div class="max-w-3xl mx-auto border-l border-[#2fff3d]/30 pl-8">
+    <div class="max-w-3xl mx-auto pl-8">
         <p class="text-lg md:text-xl leading-relaxed font-light opacity-90">
             This Project is a data visualization and analysis project that uses
             real-world street imagery to explore cultural fashion patterns
@@ -58,18 +58,20 @@
         </p>
 
         <div class="mt-12">
-            <p class="font-mono uppercase tracking-widest text-sm mb-4">
+            <p class="font-light uppercase tracking-widest text-sm mb-4">
                 Technical Core:
             </p>
-            <ul class="list-disc pl-5 space-y-4 font-mono text-sm md:text-base">
-                <li class="hover:text-white transition-colors">
+            <ul
+                class="list-disc pl-5 space-y-4 font-light text-sm md:text-base"
+            >
+                <li class="hover:italic transition-colors">
                     Computer vision on open-source street images
                 </li>
-                <li class="hover:text-white transition-colors">
+                <li class="hover:italic transition-colors">
                     Relational database modeling to organize images, categories,
                     and clothing subtypes
                 </li>
-                <li class="hover:text-white transition-colors">
+                <li class="hover:italic transition-colors">
                     Data-driven storytelling via visual fashion trend analysis
                 </li>
             </ul>
@@ -78,7 +80,7 @@
         <div
             class="mt-10 p-6 border border-[#2fff3d] bg-[#2fff3d]/5 rounded-sm"
         >
-            <h4 class="font-mono text-lg font-bold leading-snug">
+            <h4 class="font-light italic">
                 Starterkits turns everyday street fashion into structured,
                 analyzable cultural data by blending meme logic, fashion
                 sociology, and data science.

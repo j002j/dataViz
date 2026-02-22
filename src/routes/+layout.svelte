@@ -13,7 +13,7 @@
 {@render children()}
 
 {#if !hindeFooterOn.includes(page.url.pathname)}
-    <footer class="bg-black text-green-700 p-5 font-mono text-sm text-center">
+    <footer class="bg-black text-green-700 p-5 font-mono text-xs text-center">
         <p>©2026 Jennifer Janac and Anton Rabanus</p>
     </footer>
 {/if}
