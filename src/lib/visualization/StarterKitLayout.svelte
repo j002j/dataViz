@@ -6,6 +6,7 @@
     let filterOpen = $state(false);
     let statsOpen = $state(false);
     let activeTab = $state("ITEMS"); // ITEMS or KITS
+    let yearValue = $state(2020);
 </script>
 
 <!-- Root: full viewport, dark bg, no overflow -->
@@ -37,10 +38,122 @@
         <!-- Left filter panel -->
         {#if filterOpen}
             <div
-                class="panel panel-left"
+                class="panel panel-left outline-1 md:outline-neutral-600/50"
                 transition:slide={{ axis: "x", duration: 200 }}
             >
                 <!-- empty for now -->
+                <div class="p-5 font-mono">
+                    <h2
+                        class="text-[0.65rem] uppercase tracking-[0.2em] text-[#2fff3d] mb-8 pb-2"
+                    >
+                        Filter Parameters
+                    </h2>
+
+                    <div class="space-y-8">
+                        <div class="flex flex-col gap-3">
+                            <label
+                                class="text-[0.6rem] uppercase text-neutral-400 tracking-widest"
+                                >Item Category</label
+                            >
+                            <div class="flex flex-col gap-1 text-neutral-400">
+                                <div
+                                    class="flex items-center gap-2 text-[0.7rem]"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        class="accent-[#2fff3d]"
+                                    /> <span>Jackets</span>
+                                </div>
+                                <div
+                                    class="flex items-center gap-2 text-[0.7rem]"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        class="accent-[#2fff3d]"
+                                    /> <span>Pants</span>
+                                </div>
+                                <div
+                                    class="flex items-center gap-2 text-[0.7rem]"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        class="accent-[#2fff3d]"
+                                    /> <span>Shoes</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col gap-3">
+                            <label
+                                class="text-[0.6rem] uppercase text-neutral-500 tracking-widest"
+                                >Capture Year: <span class="text-[#2fff3d]"
+                                    >{yearValue}</span
+                                >
+                            </label>
+                            <input
+                                type="range"
+                                min="2016"
+                                max="2026"
+                                bind:value={yearValue}
+                                class="w-full accent-[#2fff3d] bg-neutral-500 appearance-none h-1 rounded"
+                            />
+                            <div
+                                class="flex justify-between text-[0.6rem] text-neutral-500"
+                            >
+                                <span>2016</span>
+                                <span>2026</span>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col gap-3">
+                            <label
+                                class="text-[0.6rem] uppercase text-neutral-500 tracking-widest"
+                                >Federal State</label
+                            >
+                            <select
+                                class="border border-neutral-700 text-neutral-300 text-[0.7rem] p-1 outline-none focus:border-[#2fff3d]"
+                            >
+                                <option>ALL STATES</option>
+                                <option>NORDRHEIN-WESTFALEN</option>
+                                <option>BERLIN</option>
+                                <option>BAYERN</option>
+                            </select>
+                        </div>
+
+                        <div class="flex flex-col gap-3">
+                            <label
+                                class="text-[0.6rem] uppercase text-neutral-500 tracking-widest"
+                                >Colour Palette</label
+                            >
+                            <div class="flex gap-2">
+                                <button
+                                    class="w-4 h-4 rounded-full bg-white border border-neutral-600"
+                                ></button>
+                                <button
+                                    class="w-4 h-4 rounded-full bg-black border border-[#2fff3d]"
+                                ></button>
+                                <button
+                                    class="w-4 h-4 rounded-full bg-blue-600 border border-neutral-600"
+                                ></button>
+                                <button
+                                    class="w-4 h-4 rounded-full bg-red-600 border border-neutral-600"
+                                ></button>
+                                <button
+                                    class="w-4 h-4 rounded-full bg-yellow-500 border border-neutral-600"
+                                ></button>
+                                <button
+                                    class="w-4 h-4 rounded-full bg-green-500 border border-neutral-600"
+                                ></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button
+                        class="mt-12 w-full text-[0.6rem] uppercase tracking-[0.2em] py-2 border border-neutral-700 text-neutral-500 hover:text-[#2fff3d] hover:border-[#2fff3d] transition-all"
+                    >
+                        Reset_System
+                    </button>
+                </div>
             </div>
         {/if}
 
@@ -49,9 +162,11 @@
             class="edge-tab edge-tab-left"
             class:open={filterOpen}
             onclick={() => (filterOpen = !filterOpen)}
+            style="left: {filterOpen ? '260px' : '0px'};"
         >
             <span>filter</span>
-            <span class="arrow">{filterOpen ? "◀" : "▶"}</span>
+            <span class="arrow">{filterOpen ? "▲" : "▼"}</span>
+            <!-- "◀" : "▶" -->
         </button>
 
         <!-- Pointcloud canvas -->
@@ -200,7 +315,8 @@
         cursor: pointer;
         transition:
             background 0.15s,
-            color 0.15s;
+            color 0.15s,
+            left 0.2s ease-in-out;
         z-index: 20;
     }
 
