@@ -94,7 +94,6 @@ def get_items():
 
 @app.route("/api/outfits")
 def get_outfits():
-    # same pattern for outfit_feature_matrix.csv
     rows = []
     with open("data/outfit_feature_matrix_formatted.csv", encoding="utf-8-sig") as f: #ignore BOM character in the first column name
         reader = csv.DictReader(f, delimiter=';') #split the columns at every semicolon

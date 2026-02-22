@@ -33,7 +33,7 @@
             </div>
             <div class="label-box">
                 <span class="box-label">button</span>
-                <a href="/about" class="btn btn-full">CREDITS</a>
+                <a href="/credits" class="btn btn-full">CREDITS</a>
             </div>
         </div>
     </div>

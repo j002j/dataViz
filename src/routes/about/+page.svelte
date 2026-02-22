@@ -28,12 +28,12 @@
         <div
             class="hero-overlay absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-[#111]"
         ></div>
-        <a
+        <!-- <a
             href="/"
             class="title absolute top-6 left-6 z-10 font-mono text-[#2fff3e] text-base font-bold tracking-widest"
         >
             STARTERKIT
-        </a>
+        </a> -->
     </div>
 </div>
 
@@ -41,7 +41,7 @@
     class="relative z-10 bg-[#111] text-[#2fff3d] px-8 py-24 md:px-24 lg:px-48 min-h-screen font-sans"
 >
     <h2
-        class="text-center font-bold text-4xl md:text-5xl font-black uppercase tracking-nromal mb-16"
+        class="text-center font-bold text-4xl md:text-5xl font-black uppercase tracking-normal mb-16"
     >
         Data Driven Memes
     </h2>
