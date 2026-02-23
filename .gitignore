@@ -5,6 +5,7 @@
 cropped_people/
 mapillary_images/
 data/
+data (2)/
 local_optimization/
 models/
 logs/

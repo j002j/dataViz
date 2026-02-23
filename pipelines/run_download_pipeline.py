@@ -140,12 +140,13 @@ async def worker_downloader(image_queue, city_dir, city_id, db_conn, pbar):
                                 captured_at = datetime.fromisoformat(ts_str.replace('Z', '+00:00'))
                         except: pass
 
+                    # UPDATED: Keys must match named placeholders in db_utils (:id_image, :id_city, :file_path_image)
                     record = {
-                        'image_id': int(img_id),
-                        'city_id': city_id,
+                        'id_image': int(img_id),
+                        'id_city': city_id,
                         'captured_at': captured_at,
                         'location': json.dumps(img_data.get('geometry')),
-                        'file_path': file_path
+                        'file_path_image': file_path
                     }
                     db_buffer.append(record)
                     pbar.update(1)
@@ -158,7 +159,8 @@ async def worker_downloader(image_queue, city_dir, city_id, db_conn, pbar):
             image_queue.task_done()
 
 async def process_city(city, db_conn):
-    city_id = city['id']
+    # UPDATED: Use new column keys
+    city_id = city['id_city']
     city_name = city['name']
     print(f"\n>>> Starting PARALLEL DOWNLOAD for: {city_name}")
 
@@ -171,7 +173,8 @@ async def process_city(city, db_conn):
     print(f"Known images: {len(existing_ids)}")
 
     # 2. Fill Tile Queue
-    tiles = list(tile_bbox(city['bbox'], tile_size_deg=TILE_SIZE))
+    # UPDATED: Use new bbox column
+    tiles = list(tile_bbox(city['bbox_cities'], tile_size_deg=TILE_SIZE))
     tile_queue = asyncio.Queue()
     for t in tiles:
         tile_queue.put_nowait(t)
