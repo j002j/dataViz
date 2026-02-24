@@ -20,6 +20,7 @@
     let containerEl;
     let rawData = [];
     let filteredData = [];
+    let currentController = null; // for aborting in-flight fetches, potential race condition
 
     const categoryColors = [
         "#FF595E", // 1 Short Sleeve Top
@@ -66,16 +67,25 @@
     });
 
     async function loadData(url) {
-        viewData = null; // Clear view to show loading state
-        selectedPoint = null; // Clear selection on switch
+        // Cancel any in-flight fetch
+        if (currentController) currentController.abort();
+        currentController = new AbortController();
+
+        viewData = null;
+        rawData = [];
+        filteredData = [];
+        selectedPoint = null;
 
         try {
-            const response = await fetch(url);
+            const response = await fetch(url, {
+                signal: currentController.signal,
+            });
             if (!response.ok) throw new Error("Fetch failed");
             const json = await response.json();
 
             processData(json);
         } catch (err) {
+            if (err.name === "AbortError") return; // expected, ignore
             console.error("Error loading data:", err);
         }
     }
