@@ -1,6 +1,6 @@
 <!-- workflow: 
 1. querySelection finds the nearest point when you click
-2. library calls onSelection with that point (which you're ignoring now) .. for debugging 
+2. library calls onSelection with that point (ignored just now) .. for debugging 
 3. Meanwhile your onclick={handleCanvasClick} on the outer div fires too
 4. handleCanvasClick reads whatever is in tooltip and sets selectedPoint
 -->
@@ -19,6 +19,7 @@
     let containerHeight = $state(800);
     let containerEl;
     let rawData = [];
+    let filteredData = [];
 
     const categoryColors = [
         "#FF595E", // 1 Short Sleeve Top
@@ -83,8 +84,11 @@
         const rawX = json.map((d) => parseFloat(d.x));
         const rawY = json.map((d) => parseFloat(d.y));
         const categoryColumn = new Uint8Array(
-            json.map((d) => parseInt(d.category) - 1),
+            json.map((d) => (d.category ? parseInt(d.category) - 1 : 0)),
         );
+        // const categoryColumn = new Uint8Array(
+        //     json.map((d) => parseInt(d.category) - 1),
+        // );
 
         let minX = Infinity,
             maxX = -Infinity,
@@ -99,12 +103,6 @@
 
         const xNorm = rawX.map((x) => ((x - minX) / (maxX - minX)) * 2 - 1);
         const yNorm = rawY.map((y) => ((y - minY) / (maxY - minY)) * 2 - 1);
-
-        // rawData = json.map((d, i) => ({
-        //     ...d,
-        //     xNorm: xNorm[i],
-        //     yNorm: yNorm[i],
-        // }));
 
         // viewData = {
         //     x: new Float32Array(xNorm),
@@ -145,16 +143,42 @@
             selectedCategories.size,
         );
         if (selectedCategories.size === 0) return data; // empty = show all
-        return data.filter((d) => selectedCategories.has(parseInt(d.category)));
+        if (type === "OUTFITS") {
+            // AND logic: outfit must contain ALL selected categories
+
+            const filtered = data.filter((d) => {
+                const cats = String(d.category_list).split("|").map(Number);
+                return [...selectedCategories].every((c) => cats.includes(c));
+            });
+            console.log("OUTFITS filter:");
+            console.log("  selected categories:", [...selectedCategories]);
+            console.log("  total outfits:", data.length);
+            console.log("  outfits after filter:", filtered.length);
+            console.log(
+                "  first 10 results:",
+                filtered.slice(0, 10).map((d) => d.category_list),
+            );
+            return filtered;
+        } else {
+            // ITEMS: simple single category match
+            const filtered = data.filter((d) =>
+                selectedCategories.has(parseInt(d.category)),
+            );
+            console.log("ITEMS filter:");
+            console.log("  selected categories:", [...selectedCategories]);
+            console.log("  total items:", data.length);
+            console.log("  items after filter:", filtered.length);
+            return filtered;
+        }
     }
 
     function rebuildViewData() {
-        const filtered = applyFilter(rawData);
+        filteredData = applyFilter(rawData);
         viewData = {
-            x: new Float32Array(filtered.map((d) => d.xNorm)),
-            y: new Float32Array(filtered.map((d) => d.yNorm)),
+            x: new Float32Array(filteredData.map((d) => d.xNorm)),
+            y: new Float32Array(filteredData.map((d) => d.yNorm)),
             category: new Uint8Array(
-                filtered.map((d) => parseInt(d.category) - 1),
+                filteredData.map((d) => parseInt(d.category) - 1),
             ),
         };
     }
@@ -179,9 +203,9 @@
             querySelection={async (x, y, unitDistance) => {
                 let nearest = null;
                 let minDist = Infinity;
-                for (let i = 0; i < rawData.length; i++) {
-                    const dx = rawData[i].xNorm - x;
-                    const dy = rawData[i].yNorm - y;
+                for (let i = 0; i < filteredData.length; i++) {
+                    const dx = filteredData[i].xNorm - x;
+                    const dy = filteredData[i].yNorm - y;
                     const dist = Math.sqrt(dx * dx + dy * dy);
                     if (dist < minDist) {
                         minDist = dist;
@@ -191,9 +215,9 @@
                 if (nearest === null || minDist > unitDistance * 20)
                     return null;
                 return {
-                    x: rawData[nearest].xNorm,
-                    y: rawData[nearest].yNorm,
-                    category: parseInt(rawData[nearest].category) - 1,
+                    x: filteredData[nearest].xNorm,
+                    y: filteredData[nearest].yNorm,
+                    category: parseInt(filteredData[nearest].category) - 1,
                 };
             }}
         />
