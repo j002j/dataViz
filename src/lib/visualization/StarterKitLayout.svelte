@@ -46,12 +46,18 @@
             <button
                 class="tab-btn"
                 class:active={activeTab === "ITEMS"}
-                onclick={() => (activeTab = "ITEMS")}>ITEMS</button
+                onclick={() => {
+                    activeTab = "ITEMS";
+                    activeCategories = new Set();
+                }}>ITEMS</button
             >
             <button
                 class="tab-btn"
                 class:active={activeTab === "OUTFITS"}
-                onclick={() => (activeTab = "OUTFITS")}>OUTFITS</button
+                onclick={() => {
+                    activeTab = "OUTFITS";
+                    activeCategories = new Set();
+                }}>OUTFITS</button
             >
         </div>
     </div>
@@ -282,8 +288,12 @@
 
                     <button
                         class="mt-12 w-full text-[0.6rem] uppercase tracking-[0.2em] py-2 border border-neutral-700 text-neutral-500 hover:text-[#2fff3d] hover:border-[#2fff3d] transition-all"
+                        onclick={() => {
+                            activeCategories = new Set();
+                            yearValue = 2020;
+                        }}
                     >
-                        Reset_System
+                        reset filters
                     </button>
                 </div>
             </div>
@@ -345,7 +355,6 @@
         color: #ccc;
     }
 
-    /* ── Top bar ── */
     .topbar {
         display: flex;
         align-items: center;
@@ -395,7 +404,7 @@
         border-color: #666;
     }
 
-    /* ── Main area (filter + canvas) ── */
+    /* filter + canvas */
     .main-area {
         flex: 1;
         display: flex;
@@ -404,7 +413,6 @@
         overflow: hidden;
     }
 
-    /* ── Left filter panel ── */
     .panel-left {
         width: 260px;
         flex-shrink: 0;
@@ -414,7 +422,7 @@
         z-index: 5;
     }
 
-    /* ── Bottom stats panel ── */
+    /* stats panel  */
     .panel-bottom {
         height: 200px;
         flex-shrink: 0;
@@ -424,7 +432,6 @@
         z-index: 5;
     }
 
-    /* ── Canvas ── */
     .canvas-area {
         flex: 1;
         min-width: 0;
@@ -472,7 +479,6 @@
         writing-mode: horizontal-tb; /* keep text horizontal after rotate */
     }
 
-    /* Bottom edge tab */
     .edge-tab-bottom {
         bottom: 0;
         left: 50%;
