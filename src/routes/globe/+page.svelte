@@ -1,5 +1,5 @@
 <script>
-    import CosmosCanvas from "$lib/visualization/CosmosCanvas.svelte";
+    //import CosmosCanvas from "$lib/visualization/CosmosCanvas.svelte";
     // import EmbeddingView from "../../lib/visualization/EmbeddingView.svelte";
     import EmbeddingView from "$lib/visualization/EmbeddingView.svelte";
     import StarterKitLayout from "$lib/visualization/StarterKitLayout.svelte";

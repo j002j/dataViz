@@ -9,8 +9,8 @@
     import { EmbeddingView } from "embedding-atlas/svelte";
     import { onMount } from "svelte";
 
-    // 1. Accept the type prop (ITEMS or KITS)
-    let { type = "ITEMS" } = $props();
+    // 1. Accept the type prop (ITEMS or OUTFIT)
+    let { type = "ITEMS", selectedCategories = new Set() } = $props();
 
     let tooltip = $state(null);
     let selectedPoint = $state(null);
@@ -19,6 +19,22 @@
     let containerHeight = $state(800);
     let containerEl;
     let rawData = [];
+
+    const categoryColors = [
+        "#FF595E", // 1 Short Sleeve Top
+        "#FF924C", // 2 Long Sleeve Top
+        "#FFCA3A", // 3 Short Sleeve Outerwear
+        "#C5CA30", // 4 Long Sleeve Outerwear
+        "#8AC926", // 5 Vest
+        "#36949D", // 6 Sling
+        "#1982C4", // 7 Shorts
+        "#4267AC", // 8 Trousers
+        "#565AA0", // 9 Skirt
+        "#6A4C93", // 10 Short Sleeve Dress
+        "#FF595E", // 11 Long Sleeve Dress (reusing, only 10 colors in palette)
+        "#FF924C", // 12 Vest Dress
+        "#FFCA3A", // 13 Sling Dress
+    ];
 
     const viewOptions = {
         colorScheme: "dark",
@@ -33,6 +49,18 @@
     $effect(() => {
         if (apiUrl) {
             loadData(apiUrl);
+        }
+    });
+
+    // effect to rebuild viewData when selectedCategories changes (and rawData is available)
+    $effect(() => {
+        console.log(
+            "EmbeddingView: categories effect ran, size:",
+            selectedCategories.size,
+        );
+        if (rawData.length > 0) {
+            selectedCategories; // declare dependency
+            rebuildViewData();
         }
     });
 
@@ -72,18 +100,26 @@
         const xNorm = rawX.map((x) => ((x - minX) / (maxX - minX)) * 2 - 1);
         const yNorm = rawY.map((y) => ((y - minY) / (maxY - minY)) * 2 - 1);
 
+        // rawData = json.map((d, i) => ({
+        //     ...d,
+        //     xNorm: xNorm[i],
+        //     yNorm: yNorm[i],
+        // }));
+
+        // viewData = {
+        //     x: new Float32Array(xNorm),
+        //     y: new Float32Array(yNorm),
+        //     category: categoryColumn,
+        //     // category_list: , // adapt accoring to which categories I have per point cloud
+        // };
+
         rawData = json.map((d, i) => ({
             ...d,
             xNorm: xNorm[i],
             yNorm: yNorm[i],
         }));
 
-        viewData = {
-            x: new Float32Array(xNorm),
-            y: new Float32Array(yNorm),
-            category: categoryColumn,
-            // category_list: , // adapt accoring to which categories I have per point cloud
-        };
+        rebuildViewData();
     }
 
     onMount(() => {
@@ -102,6 +138,26 @@
             selectedPoint = tooltip;
         }
     }
+
+    function applyFilter(data) {
+        console.log(
+            "applyFilter called, selectedCategories.size:",
+            selectedCategories.size,
+        );
+        if (selectedCategories.size === 0) return data; // empty = show all
+        return data.filter((d) => selectedCategories.has(parseInt(d.category)));
+    }
+
+    function rebuildViewData() {
+        const filtered = applyFilter(rawData);
+        viewData = {
+            x: new Float32Array(filtered.map((d) => d.xNorm)),
+            y: new Float32Array(filtered.map((d) => d.yNorm)),
+            category: new Uint8Array(
+                filtered.map((d) => parseInt(d.category) - 1),
+            ),
+        };
+    }
 </script>
 
 <div
@@ -116,6 +172,7 @@
             width={containerWidth}
             height={containerHeight}
             config={viewOptions}
+            {categoryColors}
             onSelection={(v) => {
                 console.log("selection:", v);
             }}

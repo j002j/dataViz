@@ -1,5 +1,5 @@
 <script>
-    import bg from "$lib/assets/square.gif";
+    import bg from "$lib/assets/ppl_square.gif";
 </script>
 
 <div class="page-wrapper">

@@ -7,6 +7,29 @@
     let statsOpen = $state(false);
     let activeTab = $state("ITEMS"); // ITEMS or KITS
     let yearValue = $state(2020);
+    const CATEGORIES = [
+        { id: 1, name: "Short Sleeve Top" },
+        { id: 2, name: "Long Sleeve Top" },
+        { id: 3, name: "Short Sleeve Outerwear" },
+        { id: 4, name: "Long Sleeve Outerwear" },
+        { id: 5, name: "Vest" },
+        { id: 6, name: "Sling" },
+        { id: 7, name: "Shorts" },
+        { id: 8, name: "Trousers" },
+        { id: 9, name: "Skirt" },
+        { id: 10, name: "Short Sleeve Dress" },
+        { id: 11, name: "Long Sleeve Dress" },
+        { id: 12, name: "Vest Dress" },
+        { id: 13, name: "Sling Dress" },
+    ];
+
+    let activeCategories = $state(new Set()); // empty = show all
+    $effect(() => {
+        console.log(
+            "StarterKitLayout: layout activeCategories size:",
+            activeCategories.size,
+        );
+    });
 </script>
 
 <!-- Root: full viewport, dark bg, no overflow -->
@@ -55,14 +78,43 @@
                                 class="text-[0.6rem] uppercase text-neutral-400 tracking-widest"
                                 >Item Category</label
                             >
-                            <div class="flex flex-col gap-1 text-neutral-400">
+                            {#each CATEGORIES as cat}
                                 <div
                                     class="flex items-center gap-2 text-[0.7rem]"
                                 >
                                     <input
                                         type="checkbox"
                                         class="accent-[#2fff3d]"
-                                    /> <span>Jackets</span>
+                                        checked={activeCategories.has(cat.id)}
+                                        onchange={() => {
+                                            console.log(
+                                                "checkbox clicked, cat.id:",
+                                                cat.id,
+                                            );
+                                            const next = new Set(
+                                                activeCategories,
+                                            );
+                                            if (next.has(cat.id))
+                                                next.delete(cat.id);
+                                            else next.add(cat.id);
+                                            activeCategories = next;
+                                            console.log(
+                                                "new size:",
+                                                activeCategories.size,
+                                            );
+                                        }}
+                                    />
+                                    <span>{cat.name}</span>
+                                </div>
+                            {/each}
+                            <!-- <div class="flex flex-col gap-1 text-neutral-400">
+                                <div
+                                    class="flex items-center gap-2 text-[0.7rem]"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        class="accent-[#2fff3d]"
+                                    /> <span>short sleeve top</span>
                                 </div>
                                 <div
                                     class="flex items-center gap-2 text-[0.7rem]"
@@ -70,7 +122,7 @@
                                     <input
                                         type="checkbox"
                                         class="accent-[#2fff3d]"
-                                    /> <span>Pants</span>
+                                    /> <span>long sleeve top</span>
                                 </div>
                                 <div
                                     class="flex items-center gap-2 text-[0.7rem]"
@@ -78,9 +130,89 @@
                                     <input
                                         type="checkbox"
                                         class="accent-[#2fff3d]"
-                                    /> <span>Shoes</span>
+                                    /> <span>short sleeve outerwear</span>
                                 </div>
-                            </div>
+                                <div
+                                    class="flex items-center gap-2 text-[0.7rem]"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        class="accent-[#2fff3d]"
+                                    /> <span>long sleeve outerwear</span>
+                                </div>
+                                <div
+                                    class="flex items-center gap-2 text-[0.7rem]"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        class="accent-[#2fff3d]"
+                                    /> <span>vest</span>
+                                </div>
+                                <div
+                                    class="flex items-center gap-2 text-[0.7rem]"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        class="accent-[#2fff3d]"
+                                    /> <span>sling</span>
+                                </div>
+                                <div
+                                    class="flex items-center gap-2 text-[0.7rem]"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        class="accent-[#2fff3d]"
+                                    /> <span>shorts</span>
+                                </div>
+                                <div
+                                    class="flex items-center gap-2 text-[0.7rem]"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        class="accent-[#2fff3d]"
+                                    /> <span>trousers</span>
+                                </div>
+                                <div
+                                    class="flex items-center gap-2 text-[0.7rem]"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        class="accent-[#2fff3d]"
+                                    /> <span>skirt</span>
+                                </div>
+                                <div
+                                    class="flex items-center gap-2 text-[0.7rem]"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        class="accent-[#2fff3d]"
+                                    /> <span>short sleeve dress</span>
+                                </div>
+                                <div
+                                    class="flex items-center gap-2 text-[0.7rem]"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        class="accent-[#2fff3d]"
+                                    /> <span>long sleeve dress</span>
+                                </div>
+                                <div
+                                    class="flex items-center gap-2 text-[0.7rem]"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        class="accent-[#2fff3d]"
+                                    /> <span>vest dress</span>
+                                </div>
+                                <div
+                                    class="flex items-center gap-2 text-[0.7rem]"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        class="accent-[#2fff3d]"
+                                    /> <span>sling dress</span>
+                                </div>
+                            </div> -->
                         </div>
 
                         <div class="flex flex-col gap-3">
@@ -171,7 +303,10 @@
 
         <!-- Pointcloud canvas -->
         <div class="canvas-area">
-            <EmbeddingView type={activeTab} />
+            <EmbeddingView
+                type={activeTab}
+                selectedCategories={activeCategories}
+            />
         </div>
 
         <!-- Stats tab trigger (right edge of canvas, actually bottom) -->
