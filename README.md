@@ -4,11 +4,10 @@ Project inspired by meme starterkits, applying data science to urban fashion tre
 
 # Structure
 The project follows the standard SvelteKit structure with a focus on modular visualization components: 
-* src/routes/: Contains the application pages 
+* src/routes/: Contains the application pages (about, credits, globe)
 * +page.svelte: The interactive landing page 
 * globe/+page.svelte: The main fashion data visualization (point cloud)
-* src/lib/: Reusable code * visualization/: Contains CosmosCanvas.svelte, the Svelte wrapper for the Cosmos.gl engine. 
-* components/: General UI elements (buttons, filters, etc.).
+* src/lib/: Reusable code:  visualization/: Contains StraterKitLayout.svelte and EmbeddingView.svelte for displaying the point cloud
 * static/: Static assets (images, icons, and fashion data samples).
 
 ## Pipeline Implementation
@@ -62,8 +61,7 @@ A Svelte 5 application utilizing Cosmos.gl for high-performance WebGL point clou
 | :--- | :--- | :--- |
 | `svelte` | 5.46.0 | Uses the new Snippet/Children pattern in layouts. |
 | Tailwind CSS + custom app.css | | Styling | 
-| formerly: `@cosmos.gl/graph` | 2.6.2 | Requires a `div` container (not just a `canvas`). Uses `Float32Array` for GPU performance. |
-| currenrly: Embedding Atlas (`embedding-atlas/svelte`) | | Visualizations: WebGPU-accelerated and provides built-in tooltip and selection callbacks | 
+| Embedding Atlas (`embedding-atlas/svelte`) | | Visualizations: WebGPU-accelerated and provides built-in tooltip and selection callbacks | 
 | `vite` | 6.4.1 | Handles the import analysis for the visualization. |
 | Python (`generate_feature_matrica.py`) | | pre-processing: Offline script that generates embeddings and produces the coordinate CSVs | 
 | .csv files | | processed datapoints for vizualization | 
@@ -112,7 +110,7 @@ To install, run:
 pip install flask flask-cors
 ```
 
-Then run the scirpt to establish the connection to the database (data/pipline.db)
+Then run the scirpt to start the backend:
 
 ```ini
 python app.py
