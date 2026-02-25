@@ -58,28 +58,62 @@ A Svelte 5 application utilizing Cosmos.gl for high-performance WebGL point clou
 
 ### Tech Stack
 
-| Library | Version | Detail |
-| --- | --- | --- |
-| svelte | 5.46.0 | Snippet/Children patterns for layout management |
-| @cosmos.gl/graph | 2.6.2 | GPU-accelerated graph simulation |
-| vite | 6.4.1 | Build and import analysis |
-### Architecture
+| Library | Version | Note |
+| :--- | :--- | :--- |
+| `svelte` | 5.46.0 | Uses the new Snippet/Children pattern in layouts. |
+| Tailwind CSS + custom app.css | | Styling | 
+| formerly: `@cosmos.gl/graph` | 2.6.2 | Requires a `div` container (not just a `canvas`). Uses `Float32Array` for GPU performance. |
+| currenrly: Embedding Atlas (`embedding-atlas/svelte`) | | Visualizations: WebGPU-accelerated and provides built-in tooltip and selection callbacks | 
+| `vite` | 6.4.1 | Handles the import analysis for the visualization. |
+| Python (`generate_feature_matrica.py`) | | pre-processing: Offline script that generates embeddings and produces the coordinate CSVs | 
+| .csv files | | processed datapoints for vizualization | 
+| app.py | | Flask server, exposes `/api/items` and `/api/outfits` | 
+| EmbeddingView.svelte | | holds the logic for the point cloud | 
+| StarterKitLayout.svelte | | holds teh layout for the application and embedds teh logic/EmbeddingView.svelte  | 
 
-* **Physics-Driven Graph:** Transitioned from static geometric layouts to a force-directed system. Points represent clothing items; layout is determined by simulated springs and repulsion.
-* **Lifecycle Management:** Uses Svelte `onMount` and `bind:this` to manage the imperative Cosmos.gl engine within a declarative framework.
-* **Memory Management:** Implements `graph.destroy()` on component unmount to clear GPU resources.
+
+### Workflow
+```
+generate_feature_matrica.py
+
+        ↓ (produces CSVs with x/y coords)
+
+app.py  →  /api/items  /api/outfits
+
+        ↓ (JSON)
+
+SvelteKit frontend
+
+        ↓ (converts to typed arrays)
+
+EmbeddingView (Embedding Atlas)
+
+
+The application works with CSV files that were genererated from generate_feature_matrica.py. To substitute them for different files change the path in the respectful routed in app.py: @app.route("/api/outfits") or @app.route("/api/items")
+
 
 ### Run the development server:
-To start the developemt server to test the pointclous locally. 
+To start the developemt server to test the pointclouds locally. 
+
 If not yet installed: 
 ```ini
 npm install -D vite 'npm run dev
 ```
+Install the install the Embedding View library:
+```ini
+npm install embedding-atlas
+```
+
 
 We are using flask and flask-cors for connecting backend and frontend to display the Data as point cloud.
 To install, run: 
-'pip install flask flask-cors'
+
+```ini
+pip install flask flask-cors
+```
+
 Then run the scirpt to establish the connection to the database (data/pipline.db)
+
 ```ini
 python app.py
 ```
@@ -90,12 +124,6 @@ npm run dev
 ```
 Open http://localhost:5173/ in the bowser and the website should appear.
 
-### Switching to embedding atlas 
-Switing from consmos.gl to embedding atlas 
-Install the install the library:
-```ini
-npm install embedding-atlas
-```
 
 ---
 
