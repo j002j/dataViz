@@ -13,6 +13,8 @@
  tqdm
  quadfeather
  polars
+ scikit-learn
+ numba
  
  # Database & Config
  python-dotenv
