@@ -6,10 +6,10 @@
     text-decoration: none;
     outline: solid;
     outline-color: rgb(47, 255, 61);
-    color: rgb(47, 255, 61);
+    color: black;
     position: relative;
     padding-block: 0.5%;
-    background: black;
+    background: rgb(47, 255, 61);
 }
 
 .btn {
@@ -42,7 +42,7 @@
 .box-label {
     position: absolute;
     top: 0;
-    left: -3px;
+    left: -1.5px;
     transform: translateY(-100%);
     background-color: rgb(47, 255, 61);
     color: black;
@@ -51,14 +51,7 @@
     padding: 0 4px;
     line-height: 1.4;
     white-space: nowrap;
-    /* @apply absolute top-0 left-0 text-xs font-mono px-1 py-0.5;
-    position: absolute;
-    background-color: rgb(47, 255, 61);
-    top: -1.4em;
-    left: -2px;
-    color: black;
-    line-height: 1; */
-    /* transform: translate(-2px, -180%); */
+
 }
 
 .exit-box-label {

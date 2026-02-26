@@ -366,13 +366,6 @@
         z-index: 10;
     }
 
-    /* .brand {
-        font-size: 0.75rem;
-        font-weight: 700;
-        letter-spacing: 0.1em;
-        color: #aaa;
-    } */
-
     .tab-group {
         display: flex;
         gap: 2px;
