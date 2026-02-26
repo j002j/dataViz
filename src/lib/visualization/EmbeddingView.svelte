@@ -23,19 +23,19 @@
     let currentController = null; // for aborting in-flight fetches, potential race condition
 
     const categoryColors = [
-        "#FF595E", // 1 Short Sleeve Top
-        "#FF924C", // 2 Long Sleeve Top
-        "#FFCA3A", // 3 Short Sleeve Outerwear
-        "#C5CA30", // 4 Long Sleeve Outerwear
-        "#8AC926", // 5 Vest
-        "#36949D", // 6 Sling
-        "#1982C4", // 7 Shorts
-        "#4267AC", // 8 Trousers
-        "#565AA0", // 9 Skirt
-        "#6A4C93", // 10 Short Sleeve Dress
-        "#FF595E", // 11 Long Sleeve Dress (reusing, only 10 colors in palette)
-        "#FF924C", // 12 Vest Dress
-        "#FFCA3A", // 13 Sling Dress
+        "#FA8072", // 1 Short Sleeve Top: salmon
+        "#FF924C", // 2 Long Sleeve Top: orange
+        "#FFCA3A", // 3 Short Sleeve Outerwear: Yellow
+        "#C5CA30", // 4 Long Sleeve Outerwear: lime
+        "#8AC926", // 5 Vest: bright green
+        "#36949D", // 6 Sling: light blue
+        "#FFFFFF", // 7 Shorts: blue
+        "#4267AC", // 8 Trousers: medium blue
+        "#565AA0", // 9 Skirt: purple
+        "#6A4C93", // 10 Short Sleeve Dress: light purple
+        "#808080", // 11 Long Sleeve Dress: gray
+        "#00FF00", // 12 Vest Dress: neon green
+        "#8B0000", // 13 Sling Dress: red
     ];
 
     const viewOptions = {

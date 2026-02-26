@@ -12,7 +12,7 @@
             </div>
             <div id="subtitle-box" class="label-box">
                 <span class="box-label">text</span>
-                <span class="box">fits from around the world</span>
+                <span class="box">FITS FROM GERMANY</span>
             </div>
         </div>
     </div>
