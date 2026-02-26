@@ -23,15 +23,13 @@
     >
         <div
             class="parallax-bg absolute top-0 left-0 w-[200%] h-full bg-cover bg-left-center will-change-transform"
-            style="transform: translateX({translateX}%); background-image: url({panorama})"
+            style="transform: translateX({translateX}%); background-image: url('{panorama}');"
         ></div>
         <div
             class="hero-overlay absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-[#111]"
         ></div>
-        <!-- <a
-            href="/"
-            class="title absolute top-6 left-6 z-10 font-mono text-[#2fff3e] text-base font-bold tracking-widest"
-        >
+        <!-- Uncomment if you want the title back -->
+        <!-- <a href="/" class="title absolute top-6 left-6 z-10 font-mono text-[#2fff3e] text-base font-bold tracking-widest">
             STARTERKIT
         </a> -->
     </div>
@@ -47,43 +45,84 @@
     </h2>
 
     <div class="max-w-3xl mx-auto pl-8">
-        <p class="text-lg md:text-xl leading-relaxed font-light opacity-90">
-            This Project is a data visualization and analysis project that uses
-            real-world street imagery to explore cultural fashion patterns
-            across cities and time worldwide.
-            <br /><br />
-            Inspired by "Starterpack" memes, we create data-driven visual archetypes
-            by applying computer vision to detect clothing attributes and grouping
-            them into the most common outfits typical for specific neighborhoods.
+        <p
+            class="text-lg md:text-xl leading-relaxed font-light opacity-90 mb-8"
+        >
+            STARTERKIT is an experiment in turning street style into data you
+            can actually explore. We are inspired by the viral starter kit memes
+            that capture the essence of subcultures in a single image. Every dot
+            represents either a single item (in the item view) or a combination
+            of items (in the outfit view). Instead of browsing through feeds,
+            you click through real street images to explore outfits in large
+            German cities over time.
         </p>
 
-        <div class="mt-12">
-            <p class="font-light uppercase tracking-widest text-sm mb-4">
-                Technical Core:
-            </p>
-            <ul
-                class="list-disc pl-5 space-y-4 font-light text-sm md:text-base"
-            >
-                <li class="hover:italic transition-colors">
-                    Computer vision on open-source street images
-                </li>
-                <li class="hover:italic transition-colors">
-                    Relational database modeling to organize images, categories,
-                    and clothing subtypes
-                </li>
-                <li class="hover:italic transition-colors">
-                    Data-driven storytelling via visual fashion trend analysis
-                </li>
-            </ul>
-        </div>
+        <p
+            class="text-lg md:text-xl leading-relaxed font-light opacity-90 mb-8"
+        >
+            With the aid of computer vision, street photos are broken down into
+            structured information. We are asking the following questions:
+        </p>
+        <ul
+            class="list-disc pl-12 space-y-2 font-light text-xl md:text-base mb-8"
+        >
+            <li class="hover:italic transition-colors">
+                which items people are wearing?
+            </li>
+            <li class="hover:italic transition-colors">
+                what colours they choose?
+            </li>
+            <li class="hover:italic transition-colors">
+                how these elements combine into outfits?
+            </li>
+        </ul>
+
+        <p
+            class="text-lg md:text-xl leading-relaxed font-light opacity-90 mb-8"
+        >
+            These details such as colour, item category or timestamp, are
+            embedded into a shared "style space" (the point cloud), so visually
+            and semantically similar looks sit close together.
+        </p>
+
+        <p
+            class="text-lg md:text-xl leading-relaxed font-light opacity-90 mb-8"
+        >
+            On the site, you can:
+        </p>
+        <ul
+            class="list-disc pl-12 space-y-2 font-light text-xl md:text-base mb-8"
+        >
+            <li class="hover:italic transition-colors">
+                Hover over points to see the original outfit image appear.
+            </li>
+            <li class="hover:italic transition-colors">
+                Switch between outfits and single items to change the level of
+                detail.s
+            </li>
+            <li class="hover:italic transition-colors">
+                Filter by attributes (such as item type, colour or time) and
+                watch the point cloud reshape in real time.
+            </li>
+        </ul>
+
+        <p
+            class="text-lg md:text-xl leading-relaxed font-light opacity-90 mb-8"
+        >
+            Instead of providing fixed answers, the site lets you explore on
+            your own terms. What do you notice?
+        </p>
 
         <div
             class="mt-10 p-6 border border-[#2fff3d] bg-[#2fff3d]/5 rounded-sm"
         >
-            <h4 class="font-light italic">
-                Starterkits turns everyday street fashion into structured,
-                analyzable cultural data by blending meme logic, fashion
-                sociology, and data science.
+            <h4 class="font-light text-lg md:text-xl">
+                This project sits somewhere between <i
+                    >fashion research, data visualisation and interactive art</i
+                >. STARTERKIT is a prototype for how we might understand
+                (fashion) culture through data without losing sight of the
+                people, either as visitors exploring the website or as an image
+                reference behind each dot.
             </h4>
         </div>
     </div>
@@ -95,7 +134,6 @@
         background-color: #111;
     }
 
-    /* We keep this one custom class for the bg-position since Tailwind's center-left is less specific */
     .bg-left-center {
         background-position: left center;
     }
