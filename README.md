@@ -85,7 +85,7 @@ SvelteKit frontend
         ↓ (converts to typed arrays)
 
 EmbeddingView (Embedding Atlas)
-
+```
 
 The application works with CSV files that were genererated from generate_feature_matrica.py. To substitute them for different files change the path in the respectful routed in app.py: @app.route("/api/outfits") or @app.route("/api/items")
 
@@ -157,4 +157,5 @@ The system uses `src/db/db_utils.py` for all database interactions. The schema i
 ## References
 
 * [DeepFashion2 Dataset](https://github.com/switchablenorms/DeepFashion2)
+
 * [Figma Design Prototype](https://www.figma.com/design/xWFdUtSlsngfeJKi33LZEx/Portfolio?node-id=0-1&t=JhhHZ7DehM6H0LSy-1)
