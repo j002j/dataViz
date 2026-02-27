@@ -94,7 +94,7 @@
         const rawX = json.map((d) => parseFloat(d.x));
         const rawY = json.map((d) => parseFloat(d.y));
         const categoryColumn = new Uint8Array(
-            json.map((d) => (d.category ? parseInt(d.category) - 1 : 0)),
+            json.map((d) => (d.category_list ? parseInt(String(d.category_list).split('|')[0]) - 1 : 0)),
         );
         // const categoryColumn = new Uint8Array(
         //     json.map((d) => parseInt(d.category) - 1),
@@ -172,7 +172,7 @@
         } else {
             // ITEMS: simple single category match
             const filtered = data.filter((d) =>
-                selectedCategories.has(parseInt(d.category)),
+                selectedCategories.has(parseInt(String(d.category_list).split('|')[0])),
             );
             console.log("ITEMS filter:");
             console.log("  selected categories:", [...selectedCategories]);
@@ -188,7 +188,7 @@
             x: new Float32Array(filteredData.map((d) => d.xNorm)),
             y: new Float32Array(filteredData.map((d) => d.yNorm)),
             category: new Uint8Array(
-                filteredData.map((d) => parseInt(d.category) - 1),
+                filteredData.map((d) => parseInt(String(d.category_list).split('|')[0]) - 1),
             ),
         };
     }
@@ -225,9 +225,8 @@
                 if (nearest === null || minDist > unitDistance * 20)
                     return null;
                 return {
-                    x: filteredData[nearest].xNorm,
-                    y: filteredData[nearest].yNorm,
-                    category: parseInt(filteredData[nearest].category) - 1,
+                    ...filteredData[nearest],
+                    category: parseInt(String(filteredData[nearest].category_list).split('|')[0]) - 1,
                 };
             }}
         />
@@ -237,18 +236,17 @@
         </div>
     {/if}
     {#if selectedPoint}
-        <div
-            class="absolute top-4 right-4 p-4 bg-white rounded shadow-lg text-black max-w-xs"
-        >
+        <div class="absolute top-4 right-4 p-4 bg-white rounded shadow-lg text-black max-w-xs z-50">
             <h3 class="font-bold text-lg mb-2">Metadata</h3>
             <p>ID: {selectedPoint.id}</p>
-            <p class="text-xs break-all mb-1">
-                Path: {selectedPoint.crop_path}
-            </p>
-            <button
-                class="mt-2 text-blue-500 text-base"
-                onclick={() => (selectedPoint = null)}>Close</button
-            >
+            <p>Date: {selectedPoint.date}</p>
+            <p class="text-xs break-all mb-1">Path: {selectedPoint.crop_path}</p>
+            <img 
+                src={`http://localhost:5000/image/${selectedPoint.crop_path}`} 
+                alt="Cropped entity" 
+                class="w-full h-auto mt-2 rounded border border-neutral-300"
+            />
+            <button class="mt-2 text-blue-500 text-base font-bold uppercase" onclick={() => (selectedPoint = null)}>Close</button>
         </div>
     {/if}
 </div>
