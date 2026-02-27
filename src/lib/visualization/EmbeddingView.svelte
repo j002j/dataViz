@@ -10,17 +10,75 @@
     import { onMount } from "svelte";
 
     // 1. Accept the type prop (ITEMS or OUTFIT)
-    let { type = "ITEMS", selectedCategories = new Set() } = $props();
-
-    let tooltip = $state(null);
+    let { 
+        type = "ITEMS", 
+        selectedCategories = new Set(),
+        dateValues = [new Date("2016-01-01").getTime(), new Date("2026-12-31").getTime()],
+        timeValues = [0, 23],
+        targetColor = "#ffffff",
+        colorTolerance = 50,
+        colorFilterActive = false,
+        activeCity = "ALL"
+    } = $props();
+    
+let tooltip = $state(null);
     let selectedPoint = $state(null);
-    let viewData = $state(null);
     let containerWidth = $state(800);
     let containerHeight = $state(800);
     let containerEl;
-    let rawData = [];
-    let filteredData = [];
-    let currentController = null; // for aborting in-flight fetches, potential race condition
+    let currentController = null;
+
+    let rawData = $state([]);
+
+    let filteredData = $derived.by(() => {
+        if (rawData.length === 0) return [];
+        
+        let targetRgb;
+        let tolSq;
+        if (colorFilterActive) {
+            targetRgb = hexToRgb(targetColor);
+            tolSq = colorTolerance * colorTolerance;
+        }
+
+        return rawData.filter((d) => {
+            const dDate = new Date(d.date).getTime();
+            if (dDate < dateValues[0] || dDate > dateValues[1]) return false;
+
+            const dTime = parseInt(d.time);
+            if (isNaN(dTime) || dTime < timeValues[0] || dTime > timeValues[1]) return false;
+
+            if (selectedCategories.size > 0) {
+                if (type === "OUTFITS") {
+                    const cats = String(d.category_list).split("|").map(Number);
+                    if (![...selectedCategories].every((c) => cats.includes(c))) return false;
+                } else {
+                    if (!selectedCategories.has(parseInt(String(d.category_list).split('|')[0]))) return false;
+                }
+            }
+
+            if (colorFilterActive) {
+                const dr = d.rgb[0] - targetRgb[0];
+                const dg = d.rgb[1] - targetRgb[1];
+                const db = d.rgb[2] - targetRgb[2];
+                if ((dr * dr + dg * dg + db * db) > tolSq) return false;
+            }
+
+            if (activeCity !== "ALL" && String(d.city).toLowerCase() !== activeCity.toLowerCase()) return false;
+
+            return true;
+        });
+    });
+
+        let viewData = $derived.by(() => {
+            if (filteredData.length === 0) return null;
+            return {
+                x: new Float32Array(filteredData.map((d) => d.xNorm)),
+                y: new Float32Array(filteredData.map((d) => d.yNorm)),
+                category: new Uint8Array(
+                    filteredData.map((d) => parseInt(String(d.category_list).split('|')[0]) - 1),
+                ),
+            };
+        });
 
     const categoryColors = [
         "#FA8072", // 1 Short Sleeve Top: salmon
@@ -51,18 +109,6 @@
     $effect(() => {
         if (apiUrl) {
             loadData(apiUrl);
-        }
-    });
-
-    // effect to rebuild viewData when selectedCategories changes (and rawData is available)
-    $effect(() => {
-        console.log(
-            "EmbeddingView: categories effect ran, size:",
-            selectedCategories.size,
-        );
-        if (rawData.length > 0) {
-            selectedCategories; // declare dependency
-            rebuildViewData();
         }
     });
 
@@ -125,9 +171,8 @@
             ...d,
             xNorm: xNorm[i],
             yNorm: yNorm[i],
+            rgb: hexToRgb(d.color)
         }));
-
-        rebuildViewData();
     }
 
     onMount(() => {
@@ -147,51 +192,16 @@
         }
     }
 
-    function applyFilter(data) {
-        console.log(
-            "applyFilter called, selectedCategories.size:",
-            selectedCategories.size,
-        );
-        if (selectedCategories.size === 0) return data; // empty = show all
-        if (type === "OUTFITS") {
-            // AND logic: outfit must contain ALL selected categories
-
-            const filtered = data.filter((d) => {
-                const cats = String(d.category_list).split("|").map(Number);
-                return [...selectedCategories].every((c) => cats.includes(c));
-            });
-            console.log("OUTFITS filter:");
-            console.log("  selected categories:", [...selectedCategories]);
-            console.log("  total outfits:", data.length);
-            console.log("  outfits after filter:", filtered.length);
-            console.log(
-                "  first 10 results:",
-                filtered.slice(0, 10).map((d) => d.category_list),
-            );
-            return filtered;
-        } else {
-            // ITEMS: simple single category match
-            const filtered = data.filter((d) =>
-                selectedCategories.has(parseInt(String(d.category_list).split('|')[0])),
-            );
-            console.log("ITEMS filter:");
-            console.log("  selected categories:", [...selectedCategories]);
-            console.log("  total items:", data.length);
-            console.log("  items after filter:", filtered.length);
-            return filtered;
-        }
+    function hexToRgb(hex) {
+        if (!hex) return [0, 0, 0];
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? [
+            parseInt(result[1], 16),
+            parseInt(result[2], 16),
+            parseInt(result[3], 16)
+        ] : [0, 0, 0];
     }
 
-    function rebuildViewData() {
-        filteredData = applyFilter(rawData);
-        viewData = {
-            x: new Float32Array(filteredData.map((d) => d.xNorm)),
-            y: new Float32Array(filteredData.map((d) => d.yNorm)),
-            category: new Uint8Array(
-                filteredData.map((d) => parseInt(String(d.category_list).split('|')[0]) - 1),
-            ),
-        };
-    }
 </script>
 
 <div
