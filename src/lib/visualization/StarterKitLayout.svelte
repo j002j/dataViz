@@ -1,12 +1,16 @@
 <script>
     import { slide } from "svelte/transition";
     import EmbeddingView from "./EmbeddingView.svelte";
-
+    import RangeSlider from "svelte-range-slider-pips";
+    
     // Panel open states
     let filterOpen = $state(false);
     let statsOpen = $state(false);
     let activeTab = $state("ITEMS"); // ITEMS or KITS
-    let yearValue = $state(2020);
+
+    let dateValues = $state([new Date("2006-04-24").getTime(), new Date("2026-02-21").getTime()]);
+    let timeValues = $state([0, 23]);
+    
     const CATEGORIES = [
         { id: 1, name: "Short Sleeve Top" },
         { id: 2, name: "Long Sleeve Top" },
@@ -30,6 +34,13 @@
             activeCategories.size,
         );
     });
+
+    let targetColor = $state("#ffffff");
+    let colorTolerance = $state(50); // Linear distance 0-442
+    let colorFilterActive = $state(false);
+
+    let activeCity = $state("ALL");
+
 </script>
 
 <!-- Root: full viewport, dark bg, no overflow -->
@@ -222,66 +233,111 @@
                         </div>
 
                         <div class="flex flex-col gap-3">
-                            <label
-                                class="text-[0.6rem] uppercase text-neutral-500 tracking-widest"
-                                >Capture Year: <span class="text-[#2fff3d]"
-                                    >{yearValue}</span
-                                >
+                            <label class="text-[0.6rem] uppercase text-neutral-500 tracking-widest">
+                                Date Range: 
+                                <span class="text-[#2fff3d]">
+                                    {new Date(dateValues[0]).toISOString().split('T')[0]} - {new Date(dateValues[1]).toISOString().split('T')[0]}
+                                </span>
                             </label>
-                            <input
-                                type="range"
-                                min="2016"
-                                max="2026"
-                                bind:value={yearValue}
-                                class="w-full accent-[#2fff3d] bg-neutral-500 appearance-none h-1 rounded"
+                            <RangeSlider 
+                                bind:values={dateValues} 
+                                min={new Date("2006-06-24").getTime()} 
+                                max={new Date("2026-02-21").getTime()} 
+                                step={86400000} 
+                                range 
+                                springValues={{ stiffness: 1, damping: 1 }}
                             />
-                            <div
-                                class="flex justify-between text-[0.6rem] text-neutral-500"
-                            >
-                                <span>2016</span>
-                                <span>2026</span>
-                            </div>
                         </div>
 
                         <div class="flex flex-col gap-3">
-                            <label
-                                class="text-[0.6rem] uppercase text-neutral-500 tracking-widest"
-                                >Federal State</label
-                            >
-                            <select
-                                class="border border-neutral-700 text-neutral-300 text-[0.7rem] p-1 outline-none focus:border-[#2fff3d]"
-                            >
-                                <option>ALL STATES</option>
-                                <option>NORDRHEIN-WESTFALEN</option>
-                                <option>BERLIN</option>
-                                <option>BAYERN</option>
+                            <label class="text-[0.6rem] uppercase text-neutral-500 tracking-widest">
+                                Time Filter (HH): 
+                                <span class="text-[#2fff3d]">{timeValues[0]}h - {timeValues[1]}h</span>
+                            </label>
+                            <RangeSlider 
+                                bind:values={timeValues} 
+                                min={0} 
+                                max={23} 
+                                step={1} 
+                                range 
+                            />
+                        </div>
+
+                        <div class="flex flex-col gap-3">
+                            <label class="text-[0.6rem] uppercase text-neutral-500 tracking-widest">City</label>
+                            <select bind:value={activeCity} class="border border-neutral-700 text-neutral-300 text-[0.7rem] p-1 outline-none focus:border-[#2fff3d] bg-[#252525]">
+                                <option value="ALL">ALL CITIES</option>
+                                <option value="Aachen">Aachen</option>
+                                <option value="Augsburg">Augsburg</option>
+                                <option value="Berlin">Berlin</option>
+                                <option value="Bielefeld">Bielefeld</option>
+                                <option value="Bochum">Bochum</option>
+                                <option value="Bonn">Bonn</option>
+                                <option value="Braunschweig">Braunschweig</option>
+                                <option value="Bremen">Bremen</option>
+                                <option value="Chemnitz">Chemnitz</option>
+                                <option value="Darmstadt">Darmstadt</option>
+                                <option value="Dortmund">Dortmund</option>
+                                <option value="Dresden">Dresden</option>
+                                <option value="Duisburg">Duisburg</option>
+                                <option value="Düsseldorf">Düsseldorf</option>
+                                <option value="Essen">Essen</option>
+                                <option value="Frankfurt am Main">Frankfurt am Main</option>
+                                <option value="Freiburg im Breisgau">Freiburg im Breisgau</option>
+                                <option value="Gelsenkirchen">Gelsenkirchen</option>
+                                <option value="Hagen">Hagen</option>
+                                <option value="Halle (Saale)">Halle (Saale)</option>
+                                <option value="Hamburg">Hamburg</option>
+                                <option value="Hamm">Hamm</option>
+                                <option value="Hannover">Hannover</option>
+                                <option value="Heidelberg">Heidelberg</option>
+                                <option value="Herne">Herne</option>
+                                <option value="Karlsruhe">Karlsruhe</option>
+                                <option value="Kassel">Kassel</option>
+                                <option value="Kiel">Kiel</option>
+                                <option value="Krefeld">Krefeld</option>
+                                <option value="Köln">Köln</option>
+                                <option value="Leipzig">Leipzig</option>
+                                <option value="Leverkusen">Leverkusen</option>
+                                <option value="Ludwigshafen am Rhein">Ludwigshafen am Rhein</option>
+                                <option value="Lübeck">Lübeck</option>
+                                <option value="Magdeburg">Magdeburg</option>
+                                <option value="Mainz">Mainz</option>
+                                <option value="Mannheim">Mannheim</option>
+                                <option value="Mönchengladbach">Mönchengladbach</option>
+                                <option value="Mülheim an der Ruhr">Mülheim an der Ruhr</option>
+                                <option value="München">München</option>
+                                <option value="Münster">Münster</option>
+                                <option value="Neuss">Neuss</option>
+                                <option value="Nürnberg">Nürnberg</option>
+                                <option value="Oberhausen">Oberhausen</option>
+                                <option value="Oldenburg">Oldenburg</option>
+                                <option value="Osnabrück">Osnabrück</option>
+                                <option value="Paderborn">Paderborn</option>
+                                <option value="Potsdam">Potsdam</option>
+                                <option value="Regensburg">Regensburg</option>
+                                <option value="Rostock">Rostock</option>
+                                <option value="Saarbrücken">Saarbrücken</option>
+                                <option value="Solingen">Solingen</option>
+                                <option value="Stuttgart">Stuttgart</option>
+                                <option value="Wiesbaden">Wiesbaden</option>
+                                <option value="Wuppertal">Wuppertal</option>
                             </select>
                         </div>
 
                         <div class="flex flex-col gap-3">
-                            <label
-                                class="text-[0.6rem] uppercase text-neutral-500 tracking-widest"
-                                >Colour Palette</label
-                            >
-                            <div class="flex gap-2">
-                                <button
-                                    class="w-4 h-4 rounded-full bg-white border border-neutral-600"
-                                ></button>
-                                <button
-                                    class="w-4 h-4 rounded-full bg-black border border-[#2fff3d]"
-                                ></button>
-                                <button
-                                    class="w-4 h-4 rounded-full bg-blue-600 border border-neutral-600"
-                                ></button>
-                                <button
-                                    class="w-4 h-4 rounded-full bg-red-600 border border-neutral-600"
-                                ></button>
-                                <button
-                                    class="w-4 h-4 rounded-full bg-yellow-500 border border-neutral-600"
-                                ></button>
-                                <button
-                                    class="w-4 h-4 rounded-full bg-green-500 border border-neutral-600"
-                                ></button>
+                            <label class="text-[0.6rem] uppercase text-neutral-500 tracking-widest">Colour Palette</label>
+                            <div class="flex items-center gap-3">
+                                <input type="checkbox" bind:checked={colorFilterActive} class="accent-[#2fff3d]" />
+                                <span class="text-[0.6rem] uppercase text-neutral-400">Enable Color Filter</span>
+                            </div>
+                            
+                            <div class="flex items-center gap-3" style="opacity: {colorFilterActive ? 1 : 0.3}; pointer-events: {colorFilterActive ? 'auto' : 'none'};">
+                                <input type="color" bind:value={targetColor} class="w-8 h-8 cursor-pointer bg-transparent border-none p-0" />
+                                <div class="flex flex-col flex-1 gap-1">
+                                    <span class="text-[0.6rem] uppercase text-neutral-500">Tolerance: {colorTolerance}</span>
+                                    <input type="range" min="0" max="442" bind:value={colorTolerance} class="accent-[#2fff3d]" />
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -290,7 +346,11 @@
                         class="mt-12 w-full text-[0.6rem] uppercase tracking-[0.2em] py-2 border border-neutral-700 text-neutral-500 hover:text-[#2fff3d] hover:border-[#2fff3d] transition-all"
                         onclick={() => {
                             activeCategories = new Set();
-                            yearValue = 2020;
+                            dateValues = [new Date("2016-01-01").getTime(), new Date("2026-12-31").getTime()];
+                            timeValues = [0, 23];
+                            colorFilterActive = false;
+                            colorTolerance = 50;
+                            activeCity = "ALL";
                         }}
                     >
                         reset filters
@@ -316,6 +376,12 @@
             <EmbeddingView
                 type={activeTab}
                 selectedCategories={activeCategories}
+                {dateValues}
+                {timeValues}
+                {targetColor}
+                {colorTolerance}
+                {colorFilterActive}
+                {activeCity}
             />
         </div>
 
@@ -483,5 +549,14 @@
 
     .arrow {
         font-size: 0.6rem;
+    }
+
+    :global(.rangeSlider) {
+    --range-slider: #555;
+    --range-handle-inactive: #2fff3d;
+    --range-handle: #2fff3d;
+    --range-handle-focus: #2fff3d;
+    --range-float: #2fff3d;
+    --range-float-text: #000;
     }
 </style>
