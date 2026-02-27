@@ -10,11 +10,10 @@ export default defineConfig({
     ],
     optimizeDeps: {
         exclude: ['embedding-atlas']
+    },
+    server: {
+        watch: {
+            ignored: ['**/data/**']
+        }
     }
-    // server: {
-    //     fs: {
-    //         // Erlaubt Vite den Zugriff auf den gesamten Workspace
-    //         allow: ['..']
-    //     }
-    // }
 });
