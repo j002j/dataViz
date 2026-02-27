@@ -95,7 +95,7 @@ To start the developemt server to test the pointclouds locally.
 
 If not yet installed: 
 ```ini
-npm install -D vite 'npm run dev
+npm install -D vite npm run dev
 ```
 Install the install the Embedding View library:
 ```ini
@@ -116,7 +116,7 @@ Then run the scirpt to start the backend:
 python app.py
 ```
 
-To start the vite server for teh forntend run:
+To start the vite server for the forntend run:
 ```ini
 npm run dev
 ```
@@ -159,3 +159,4 @@ The system uses `src/db/db_utils.py` for all database interactions. The schema i
 * [DeepFashion2 Dataset](https://github.com/switchablenorms/DeepFashion2)
 
 * [Figma Design Prototype](https://www.figma.com/design/xWFdUtSlsngfeJKi33LZEx/Portfolio?node-id=0-1&t=JhhHZ7DehM6H0LSy-1)
+
