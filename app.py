@@ -39,8 +39,9 @@ def get_outfits():
 
 @app.route("/image/<path:filepath>")
 def get_image(filepath):
-    # Resolves paths like 'data/cropped/people/...' relative to script location
-    return send_file(os.path.abspath(filepath))
+    filename = os.path.basename(filepath)
+    target_path = os.path.abspath(os.path.join("data", "cropped_people", filename))
+    return send_file(target_path)
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
