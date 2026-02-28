@@ -69,13 +69,26 @@
     
         if (selectedCategories.size > 0) {
             let catMask = new Uint32Array(bitsetWords);
+            if (type === "OUTFITS") catMask.fill(0xFFFFFFFF);
+            
+            let validMatch = false;
             for (const catId of selectedCategories) {
                 const m = indexCategory.get(catId);
-                if (m) {
-                    if (type === "OUTFITS") catMask = intersectBitsets(catMask, m);
-                    else catMask = unionBitsets(catMask, m);
+                if (type === "OUTFITS") {
+                    if (m) {
+                        catMask = intersectBitsets(catMask, m);
+                        validMatch = true;
+                    } else {
+                        catMask.fill(0);
+                    }
+                } else {
+                    if (m) {
+                        catMask = unionBitsets(catMask, m);
+                        validMatch = true;
+                    }
                 }
             }
+            if (!validMatch) catMask.fill(0);
             activeMask = intersectBitsets(activeMask, catMask);
         }
     
@@ -150,6 +163,11 @@
         if (apiUrl) {
             loadData(apiUrl);
         }
+    });
+
+    $effect(() => {
+        console.log("[State Layer] Tooltip payload:", tooltip);
+        console.log("[State Layer] Selected point payload:", selectedPoint);
     });
 
     async function loadData(url) {
@@ -273,10 +291,17 @@
 
 <div
     bind:this={containerEl}
-    class="flex-grow min-h-0 w-full bg-neutral-800"
+    class="flex-grow min-h-0 w-full bg-neutral-800 relative"
     style="height: 100%;"
-    onclick={handleCanvasClick}
-    onmousemove={(e) => { mouseX = e.clientX; mouseY = e.clientY; }}
+    onclick={(e) => {
+        console.log("[DOM Layer] Click detected at CSS:", e.clientX, e.clientY);
+        handleCanvasClick();
+    }}
+    onmousemove={(e) => { 
+        mouseX = e.clientX; 
+        mouseY = e.clientY; 
+        if (e.clientX % 50 === 0) console.log("[DOM Layer] Mouse tracking active:", mouseX, mouseY);
+    }}
 >
     {#if viewData}
         <EmbeddingView
@@ -286,7 +311,11 @@
             config={viewOptions}
             {categoryColors}
             onHover={(v) => {
+                console.log("[WebGL Layer] Engine emitted hover event:", v);
                 tooltip = v;
+            }}
+            onSelection={(v) => {
+                console.log("[WebGL Layer] Engine emitted selection event:", v);
             }}
             querySelection={async (x, y, unitDistance) => {
                 let nearest = null;
@@ -300,11 +329,20 @@
                         nearest = i;
                     }
                 }
-                if (nearest === null || minDist > unitDistance * 20)
+                
+                if (nearest === null || minDist > unitDistance * 20) {
+                    tooltip = null;
                     return null;
-            
+                }
+                
                 const originalIdx = viewData.originalIndices[nearest];
-                return rawObjects[originalIdx];
+                const hitNode = rawObjects[originalIdx];
+                
+                // 1. Intercept payload for custom HTML overlay
+                tooltip = hitNode; 
+                
+                // 2. Transmit null to engine to kill native JSON tooltip render cycle
+                return null; 
             }}
         />
     {:else}
