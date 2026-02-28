@@ -21,64 +21,101 @@
         activeCity = "ALL"
     } = $props();
     
-let tooltip = $state(null);
+    let tooltip = $state(null);
     let selectedPoint = $state(null);
     let containerWidth = $state(800);
     let containerHeight = $state(800);
     let containerEl;
     let currentController = null;
 
-    let rawData = $state([]);
+    let rawObjects = $state.raw([]);
 
-    let filteredData = $derived.by(() => {
-        if (rawData.length === 0) return [];
+    let colDates;
+    let colTimes;
+    let colR, colG, colB;
+    let colX, colY;
+
+    let bitsetWords = 0;
+    let indexCity = new Map();
+    let indexCategory = new Map();
+
+    function createBitset(size) { return new Uint32Array(Math.ceil(size / 32)); }
+    function setBit(bitset, index) { bitset[index >> 5] |= (1 << (index & 31)); }
+    function testBit(bitset, index) { return (bitset[index >> 5] & (1 << (index & 31))) !== 0; }
+    function intersectBitsets(a, b) {
+        const res = new Uint32Array(a.length);
+        for (let i = 0; i < a.length; i++) res[i] = a[i] & b[i];
+        return res;
+    }
+    function unionBitsets(a, b) {
+        const res = new Uint32Array(a.length);
+        for (let i = 0; i < a.length; i++) res[i] = a[i] | b[i];
+        return res;
+    }
+    let viewData = $derived.by(() => {
+        if (!rawObjects || rawObjects.length === 0) return null;
         
-        let targetRgb;
-        let tolSq;
+        const N = rawObjects.length;
+        let activeMask = new Uint32Array(bitsetWords);
+        activeMask.fill(0xFFFFFFFF);
+        
+        if (activeCity !== "ALL") {
+            const cityMask = indexCity.get(activeCity.toLowerCase());
+            if (cityMask) activeMask = intersectBitsets(activeMask, cityMask);
+            else return null;
+        }
+    
+        if (selectedCategories.size > 0) {
+            let catMask = new Uint32Array(bitsetWords);
+            for (const catId of selectedCategories) {
+                const m = indexCategory.get(catId);
+                if (m) {
+                    if (type === "OUTFITS") catMask = intersectBitsets(catMask, m);
+                    else catMask = unionBitsets(catMask, m);
+                }
+            }
+            activeMask = intersectBitsets(activeMask, catMask);
+        }
+    
+        let targetRgb, tolSq;
         if (colorFilterActive) {
             targetRgb = hexToRgb(targetColor);
             tolSq = colorTolerance * colorTolerance;
         }
-
-        return rawData.filter((d) => {
-            const dDate = new Date(d.date).getTime();
-            if (dDate < dateValues[0] || dDate > dateValues[1]) return false;
-
-            const dTime = parseInt(d.time);
-            if (isNaN(dTime) || dTime < timeValues[0] || dTime > timeValues[1]) return false;
-
-            if (selectedCategories.size > 0) {
-                if (type === "OUTFITS") {
-                    const cats = String(d.category_list).split("|").map(Number);
-                    if (![...selectedCategories].every((c) => cats.includes(c))) return false;
-                } else {
-                    if (!selectedCategories.has(parseInt(String(d.category_list).split('|')[0]))) return false;
+    
+        const outX = [];
+        const outY = [];
+        const outCat = [];
+        const outOriginalIndex = [];
+    
+        for (let i = 0; i < N; i++) {
+            if (testBit(activeMask, i)) {
+                if (colDates[i] < dateValues[0] || colDates[i] > dateValues[1]) continue;
+                if (colTimes[i] < timeValues[0] || colTimes[i] > timeValues[1]) continue;
+            
+                if (colorFilterActive) {
+                    const dr = colR[i] - targetRgb[0];
+                    const dg = colG[i] - targetRgb[1];
+                    const db = colB[i] - targetRgb[2];
+                    if ((dr * dr + dg * dg + db * db) > tolSq) continue;
                 }
+            
+                outX.push(colX[i]);
+                outY.push(colY[i]);
+                outCat.push(rawObjects[i].category);
+                outOriginalIndex.push(i);
             }
-
-            if (colorFilterActive) {
-                const dr = d.rgb[0] - targetRgb[0];
-                const dg = d.rgb[1] - targetRgb[1];
-                const db = d.rgb[2] - targetRgb[2];
-                if ((dr * dr + dg * dg + db * db) > tolSq) return false;
-            }
-
-            if (activeCity !== "ALL" && String(d.city).toLowerCase() !== activeCity.toLowerCase()) return false;
-
-            return true;
-        });
+        }
+    
+        if (outX.length === 0) return null;
+    
+        return {
+            x: new Float32Array(outX),
+            y: new Float32Array(outY),
+            category: new Uint8Array(outCat),
+            originalIndices: new Int32Array(outOriginalIndex)
+        };
     });
-
-        let viewData = $derived.by(() => {
-            if (filteredData.length === 0) return null;
-            return {
-                x: new Float32Array(filteredData.map((d) => d.xNorm)),
-                y: new Float32Array(filteredData.map((d) => d.yNorm)),
-                category: new Uint8Array(
-                    filteredData.map((d) => parseInt(String(d.category_list).split('|')[0]) - 1),
-                ),
-            };
-        });
 
     const categoryColors = [
         "#FA8072", // 1 Short Sleeve Top: salmon
@@ -118,8 +155,7 @@ let tooltip = $state(null);
         currentController = new AbortController();
 
         viewData = null;
-        rawData = [];
-        filteredData = [];
+        rawObjects = [];
         selectedPoint = null;
 
         try {
@@ -139,40 +175,68 @@ let tooltip = $state(null);
     function processData(json) {
         const rawX = json.map((d) => parseFloat(d.x));
         const rawY = json.map((d) => parseFloat(d.y));
-        const categoryColumn = new Uint8Array(
-            json.map((d) => (d.category_list ? parseInt(String(d.category_list).split('|')[0]) - 1 : 0)),
-        );
-        // const categoryColumn = new Uint8Array(
-        //     json.map((d) => parseInt(d.category) - 1),
-        // );
-
-        let minX = Infinity,
-            maxX = -Infinity,
-            minY = Infinity,
-            maxY = -Infinity;
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        
         for (let i = 0; i < rawX.length; i++) {
             if (rawX[i] < minX) minX = rawX[i];
             if (rawX[i] > maxX) maxX = rawX[i];
             if (rawY[i] < minY) minY = rawY[i];
             if (rawY[i] > maxY) maxY = rawY[i];
         }
-
+    
         const xNorm = rawX.map((x) => ((x - minX) / (maxX - minX)) * 2 - 1);
         const yNorm = rawY.map((y) => ((y - minY) / (maxY - minY)) * 2 - 1);
-
-        // viewData = {
-        //     x: new Float32Array(xNorm),
-        //     y: new Float32Array(yNorm),
-        //     category: categoryColumn,
-        //     // category_list: , // adapt accoring to which categories I have per point cloud
-        // };
-
-        rawData = json.map((d, i) => ({
-            ...d,
-            xNorm: xNorm[i],
-            yNorm: yNorm[i],
-            rgb: hexToRgb(d.color)
-        }));
+    
+        const N = json.length;
+        bitsetWords = Math.ceil(N / 32);
+    
+        colDates = new Float64Array(N);
+        colTimes = new Int8Array(N);
+        colR = new Uint8Array(N);
+        colG = new Uint8Array(N);
+        colB = new Uint8Array(N);
+        colX = new Float32Array(N);
+        colY = new Float32Array(N);
+    
+        indexCity.clear();
+        indexCategory.clear();
+    
+        const objects = new Array(N);
+    
+        for (let i = 0; i < N; i++) {
+            const d = json[i];
+            const rgb = hexToRgb(d.color);
+        
+            colDates[i] = new Date(d.date).getTime();
+            colTimes[i] = parseInt(d.time) || 0;
+            colR[i] = rgb[0];
+            colG[i] = rgb[1];
+            colB[i] = rgb[2];
+            colX[i] = xNorm[i];
+            colY[i] = yNorm[i];
+        
+            let cat = 0;
+            if (type === "OUTFITS") {
+                const cats = String(d.category_list).split("|").map(Number);
+                cat = cats[0] || 0;
+                cats.forEach(c => {
+                    if (!indexCategory.has(c)) indexCategory.set(c, createBitset(N));
+                    setBit(indexCategory.get(c), i);
+                });
+            } else {
+                cat = parseInt(String(d.category_list).split('|')[0]) || 0;
+                if (!indexCategory.has(cat)) indexCategory.set(cat, createBitset(N));
+                setBit(indexCategory.get(cat), i);
+            }
+        
+            const city = String(d.city).toLowerCase();
+            if (!indexCity.has(city)) indexCity.set(city, createBitset(N));
+            setBit(indexCity.get(city), i);
+        
+            objects[i] = { ...d, rgb, category: cat - 1 };
+        }
+    
+        rawObjects = objects;
     }
 
     onMount(() => {
@@ -223,9 +287,9 @@ let tooltip = $state(null);
             querySelection={async (x, y, unitDistance) => {
                 let nearest = null;
                 let minDist = Infinity;
-                for (let i = 0; i < filteredData.length; i++) {
-                    const dx = filteredData[i].xNorm - x;
-                    const dy = filteredData[i].yNorm - y;
+                for (let i = 0; i < viewData.x.length; i++) {
+                    const dx = viewData.x[i] - x;
+                    const dy = viewData.y[i] - y;
                     const dist = Math.sqrt(dx * dx + dy * dy);
                     if (dist < minDist) {
                         minDist = dist;
@@ -234,10 +298,9 @@ let tooltip = $state(null);
                 }
                 if (nearest === null || minDist > unitDistance * 20)
                     return null;
-                return {
-                    ...filteredData[nearest],
-                    category: parseInt(String(filteredData[nearest].category_list).split('|')[0]) - 1,
-                };
+            
+                const originalIdx = viewData.originalIndices[nearest];
+                return rawObjects[originalIdx];
             }}
         />
     {:else}
