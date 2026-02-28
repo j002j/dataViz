@@ -12,7 +12,7 @@ Project inspired by meme starterkits, applying data science to urban fashion tre
 
 ### **2. Data Configuration**
 
-1. Download dataset: (Sharepoint)[https://fhd-my.sharepoint.com/:f:/g/personal/anton_rabanus_study_hs-duesseldorf_de/IgAcs-Or3-sNQLxlxcrHztTgARBn437VgafuPHelGraxlbY?e=cNZKEm]
+1. Download dataset: [Sharepoint](https://fhd-my.sharepoint.com/:f:/g/personal/anton_rabanus_study_hs-duesseldorf_de/IgAcs-Or3-sNQLxlxcrHztTgARBn437VgafuPHelGraxlbY?e=cNZKEm)
 2. Extract archive.
 3. Move extracted contents into the `data/` directory at the project root. Create directory if it does not exist.
 
