@@ -18,8 +18,10 @@
         targetColor = "#ffffff",
         colorTolerance = 50,
         colorFilterActive = false,
-        activeCity = "ALL"
+        activeCity = "ALL",
+        activeDataset = "base"
     } = $props();
+    
     
     let tooltip = $state(null);
     let selectedPoint = $state(null);
@@ -29,6 +31,7 @@
     let mouseY = $state(0);
     let containerEl;
     let currentController = null;
+    const dataCache = new Map();
 
     let rawObjects = $state.raw([]);
 
@@ -156,7 +159,7 @@
     };
 
     // 2. Create a reactive URL based on the tab
-    const apiUrl = $derived(`http://localhost:5000/api/${type.toLowerCase()}`);
+    const apiUrl = $derived(`http://localhost:5000/api/${type.toLowerCase()}?dataset=${activeDataset}`);
 
     // 3. Use an effect to re-fetch whenever the URL changes
     $effect(() => {
@@ -171,7 +174,11 @@
     });
 
     async function loadData(url) {
-        // Cancel any in-flight fetch
+        if (dataCache.has(url)) {
+            processData(dataCache.get(url));
+            return;
+        }
+
         if (currentController) currentController.abort();
         currentController = new AbortController();
 
@@ -185,10 +192,11 @@
             });
             if (!response.ok) throw new Error("Fetch failed");
             const json = await response.json();
-
+            
+            dataCache.set(url, json);
             processData(json);
         } catch (err) {
-            if (err.name === "AbortError") return; // expected, ignore
+            if (err.name === "AbortError") return;
             console.error("Error loading data:", err);
         }
     }
@@ -288,12 +296,6 @@
             parseInt(result[2], 16),
             parseInt(result[3], 16)
         ] : [0, 0, 0];
-    }
-
-    function correctBgrHex(hex) {
-        if (!hex) return "#000000";
-        const res = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-        return res ? `#${res[3]}${res[2]}${res[1]}` : "#000000";
     }
 
 </script>

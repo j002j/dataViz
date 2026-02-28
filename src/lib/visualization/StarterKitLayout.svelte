@@ -7,6 +7,7 @@
     let filterOpen = $state(false);
     let statsOpen = $state(false);
     let activeTab = $state("ITEMS"); // ITEMS or KITS
+    let activeDataset = $state("base");
 
     let dateValues = $state([new Date("2006-04-24").getTime(), new Date("2026-02-21").getTime()]);
     let timeValues = $state([0, 23]);
@@ -231,6 +232,24 @@
                                 </div>
                             </div> -->
                         </div>
+                        
+                        <div class="flex flex-col gap-3">
+                            <label class="text-[0.6rem] uppercase text-neutral-500 tracking-widest">Dataset Projection</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button 
+                                    class="border border-neutral-700 text-[0.6rem] p-2 uppercase tracking-widest transition-colors {activeDataset === 'base' ? 'bg-[#2fff3d] text-black border-[#2fff3d] font-bold' : 'text-neutral-400 hover:border-[#2fff3d]'}" 
+                                    onclick={() => activeDataset = 'base'}>Base</button>
+                                <button 
+                                    class="border border-neutral-700 text-[0.6rem] p-2 uppercase tracking-widest transition-colors {activeDataset === 'time' ? 'bg-[#2fff3d] text-black border-[#2fff3d] font-bold' : 'text-neutral-400 hover:border-[#2fff3d]'}" 
+                                    onclick={() => activeDataset = 'time'}>Time</button>
+                                <button 
+                                    class="border border-neutral-700 text-[0.6rem] p-2 uppercase tracking-widest transition-colors {activeDataset === 'loc' ? 'bg-[#2fff3d] text-black border-[#2fff3d] font-bold' : 'text-neutral-400 hover:border-[#2fff3d]'}" 
+                                    onclick={() => activeDataset = 'loc'}>Location</button>
+                                <button 
+                                    class="border border-neutral-700 text-[0.6rem] p-2 uppercase tracking-widest transition-colors {activeDataset === 'time_loc' ? 'bg-[#2fff3d] text-black border-[#2fff3d] font-bold' : 'text-neutral-400 hover:border-[#2fff3d]'}" 
+                                    onclick={() => activeDataset = 'time_loc'}>Time + Loc</button>
+                            </div>
+                        </div>
 
                         <div class="flex flex-col gap-3">
                             <label class="text-[0.6rem] uppercase text-neutral-500 tracking-widest">
@@ -351,6 +370,7 @@
                             colorFilterActive = false;
                             colorTolerance = 50;
                             activeCity = "ALL";
+                            // activeDataset = "base";
                         }}
                     >
                         reset filters
@@ -382,6 +402,7 @@
                 {colorTolerance}
                 {colorFilterActive}
                 {activeCity}
+                {activeDataset}
             />
         </div>
 
