@@ -196,21 +196,21 @@
     function processData(json) {
         const rawX = json.map((d) => parseFloat(d.x));
         const rawY = json.map((d) => parseFloat(d.y));
+
         let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-        
         for (let i = 0; i < rawX.length; i++) {
             if (rawX[i] < minX) minX = rawX[i];
             if (rawX[i] > maxX) maxX = rawX[i];
             if (rawY[i] < minY) minY = rawY[i];
             if (rawY[i] > maxY) maxY = rawY[i];
         }
-    
+
         const xNorm = rawX.map((x) => (x - minX) / (maxX - minX));
         const yNorm = rawY.map((y) => (y - minY) / (maxY - minY));
-    
+
         const N = json.length;
         bitsetWords = Math.ceil(N / 32);
-    
+
         colDates = new Float64Array(N);
         colTimes = new Int8Array(N);
         colR = new Uint8Array(N);
@@ -218,16 +218,19 @@
         colB = new Uint8Array(N);
         colX = new Float32Array(N);
         colY = new Float32Array(N);
-    
+
         indexCity.clear();
         indexCategory.clear();
-    
+
         const objects = new Array(N);
-    
+
         for (let i = 0; i < N; i++) {
             const d = json[i];
-            const rgb = hexToRgb(d.color);
-        
+            
+            const bgr = hexToRgb(d.color);
+            const rgb = [bgr[2], bgr[1], bgr[0]];
+            const correctedHex = `#${rgb[0].toString(16).padStart(2, '0')}${rgb[1].toString(16).padStart(2, '0')}${rgb[2].toString(16).padStart(2, '0')}`;
+
             colDates[i] = new Date(d.date).getTime();
             colTimes[i] = parseInt(d.time) || 0;
             colR[i] = rgb[0];
@@ -235,7 +238,7 @@
             colB[i] = rgb[2];
             colX[i] = xNorm[i];
             colY[i] = yNorm[i];
-        
+
             let cat = 0;
             if (type === "OUTFITS") {
                 const cats = String(d.category_list).split("|").map(Number);
@@ -249,14 +252,14 @@
                 if (!indexCategory.has(cat)) indexCategory.set(cat, createBitset(N));
                 setBit(indexCategory.get(cat), i);
             }
-        
+
             const city = String(d.city).toLowerCase();
             if (!indexCity.has(city)) indexCity.set(city, createBitset(N));
             setBit(indexCity.get(city), i);
-        
-            objects[i] = { ...d, rgb, category: cat - 1 };
+
+            objects[i] = { ...d, color: correctedHex, rgb, category: cat - 1 };
         }
-    
+
         rawObjects = objects;
     }
 
@@ -285,6 +288,12 @@
             parseInt(result[2], 16),
             parseInt(result[3], 16)
         ] : [0, 0, 0];
+    }
+
+    function correctBgrHex(hex) {
+        if (!hex) return "#000000";
+        const res = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return res ? `#${res[3]}${res[2]}${res[1]}` : "#000000";
     }
 
 </script>
