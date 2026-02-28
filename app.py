@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, send_file
+from flask import Flask, jsonify, send_file, request
 from flask_cors import CORS
 import csv
 import os
@@ -31,11 +31,17 @@ def read_csv(filepath):
 
 @app.route("/api/items")
 def get_items():
-    return jsonify(read_csv("data/item_base.csv"))
+    dataset = request.args.get('dataset', 'base')
+    if dataset not in ['base', 'time', 'loc', 'time_loc']:
+        dataset = 'base'
+    return jsonify(read_csv(f"data/item_{dataset}.csv"))
 
 @app.route("/api/outfits")
 def get_outfits():
-    return jsonify(read_csv("data/outfit_base.csv"))
+    dataset = request.args.get('dataset', 'base')
+    if dataset not in ['base', 'time', 'loc', 'time_loc']:
+        dataset = 'base'
+    return jsonify(read_csv(f"data/outfit_{dataset}.csv"))
 
 @app.route("/image/<path:filepath>")
 def get_image(filepath):
