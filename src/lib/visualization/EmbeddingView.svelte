@@ -25,6 +25,8 @@
     let selectedPoint = $state(null);
     let containerWidth = $state(800);
     let containerHeight = $state(800);
+    let mouseX = $state(0);
+    let mouseY = $state(0);
     let containerEl;
     let currentController = null;
 
@@ -137,6 +139,7 @@
         colorScheme: "dark",
         opacity: 1,
         pointSize: 2,
+        tooltip: false
     };
 
     // 2. Create a reactive URL based on the tab
@@ -184,8 +187,8 @@
             if (rawY[i] > maxY) maxY = rawY[i];
         }
     
-        const xNorm = rawX.map((x) => ((x - minX) / (maxX - minX)) * 2 - 1);
-        const yNorm = rawY.map((y) => ((y - minY) / (maxY - minY)) * 2 - 1);
+        const xNorm = rawX.map((x) => (x - minX) / (maxX - minX));
+        const yNorm = rawY.map((y) => (y - minY) / (maxY - minY));
     
         const N = json.length;
         bitsetWords = Math.ceil(N / 32);
@@ -273,6 +276,7 @@
     class="flex-grow min-h-0 w-full bg-neutral-800"
     style="height: 100%;"
     onclick={handleCanvasClick}
+    onmousemove={(e) => { mouseX = e.clientX; mouseY = e.clientY; }}
 >
     {#if viewData}
         <EmbeddingView
@@ -281,8 +285,8 @@
             height={containerHeight}
             config={viewOptions}
             {categoryColors}
-            onSelection={(v) => {
-                console.log("selection:", v);
+            onHover={(v) => {
+                tooltip = v;
             }}
             querySelection={async (x, y, unitDistance) => {
                 let nearest = null;
@@ -308,18 +312,47 @@
             Loading data...
         </div>
     {/if}
+    {#if tooltip && !selectedPoint}
+        <div
+            class="fixed pointer-events-none p-3 bg-neutral-900 border border-neutral-700 rounded shadow-2xl text-white w-48 z-40 flex flex-col gap-2"
+            style="left: {mouseX + 15}px; top: {mouseY + 15}px;"
+        >
+            <img 
+                src={`http://localhost:5000/image/${tooltip.crop_path}`} 
+                alt="Thumbnail" 
+                class="w-full h-auto rounded bg-black"
+            />
+            <div class="text-[0.65rem] uppercase tracking-widest text-neutral-400 font-mono space-y-1">
+                <p><span class="text-neutral-500">City:</span> {tooltip.city}</p>
+                <p><span class="text-neutral-500">Date:</span> {tooltip.date}</p>
+                <p><span class="text-neutral-500">Time:</span> {tooltip.time}h</p>
+                <div class="flex items-center gap-2 mt-1">
+                    <span class="text-neutral-500">Color:</span> 
+                    <div class="w-4 h-4 rounded border border-neutral-500" style="background-color: {tooltip.color};"></div>
+                </div>
+            </div>
+        </div>
+    {/if}
+
     {#if selectedPoint}
-        <div class="absolute top-4 right-4 p-4 bg-white rounded shadow-lg text-black max-w-xs z-50">
-            <h3 class="font-bold text-lg mb-2">Metadata</h3>
-            <p>ID: {selectedPoint.id}</p>
-            <p>Date: {selectedPoint.date}</p>
-            <p class="text-xs break-all mb-1">Path: {selectedPoint.crop_path}</p>
+        <div class="absolute top-4 right-4 p-4 bg-neutral-900 border border-neutral-700 rounded shadow-2xl text-white max-w-xs z-50 flex flex-col gap-2 font-mono">
+            <h3 class="font-bold text-xs uppercase tracking-[0.2em] text-[#2fff3d] mb-2">Node Metadata</h3>
+            <div class="text-[0.7rem] uppercase tracking-widest text-neutral-400 space-y-1">
+                <p><span class="text-neutral-500">ID:</span> {selectedPoint.id}</p>
+                <p><span class="text-neutral-500">City:</span> {selectedPoint.city}</p>
+                <p><span class="text-neutral-500">Date:</span> {selectedPoint.date}</p>
+                <p><span class="text-neutral-500">Time:</span> {selectedPoint.time}h</p>
+                <div class="flex items-center gap-2 mt-1">
+                    <span class="text-neutral-500">Color:</span> 
+                    <div class="w-4 h-4 rounded border border-neutral-500" style="background-color: {selectedPoint.color};"></div>
+                </div>
+            </div>
             <img 
                 src={`http://localhost:5000/image/${selectedPoint.crop_path}`} 
                 alt="Cropped entity" 
-                class="w-full h-auto mt-2 rounded border border-neutral-300"
+                class="w-full h-auto mt-2 rounded border border-neutral-700"
             />
-            <button class="mt-2 text-blue-500 text-base font-bold uppercase" onclick={() => (selectedPoint = null)}>Close</button>
+            <button class="mt-3 text-neutral-900 bg-[#2fff3d] hover:bg-[#25cc30] py-2 w-full text-[0.65rem] font-bold uppercase tracking-widest transition-colors cursor-pointer" onclick={() => (selectedPoint = null)}>Close</button>
         </div>
     {/if}
 </div>
