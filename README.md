@@ -2,7 +2,101 @@
 
 Project inspired by meme starterkits, applying data science to urban fashion trends by analyzing street-level imagery and generating 2D semantic embedding spaces.
 
-# Structure
+## Run the development server:
+**Setup Manual**
+
+### **1. Prerequisites**
+
+* Python 3.10.19
+* Node.js v18.19.1
+
+### **2. Data Configuration**
+
+1. Download dataset: (Sharepoint)[https://fhd-my.sharepoint.com/:f:/g/personal/anton_rabanus_study_hs-duesseldorf_de/IgAcs-Or3-sNQLxlxcrHztTgARBn437VgafuPHelGraxlbY?e=cNZKEm]
+2. Extract archive.
+3. Move extracted contents into the `data/` directory at the project root. Create directory if it does not exist.
+
+#### Folder Structure
+
+The application expects the following directory layout to correctly serve datasets and images via the Flask backend:
+
+```text
+project_root/
+├── .venv/               # Python virtual environment
+├── data/                # Primary data directory (must be created)
+│   ├── item_base.csv    # Required for /api/items
+│   ├── item_loc.csv    # Required for /api/items
+│   ├── item_time_loc.csv    # Required for /api/items
+│   ├── item_time.csv    # Required for /api/items
+│   ├── outfit_base.csv  # Required for /api/outfits
+│   ├── outfit_loc.csv  # Required for /api/outfits
+│   ├── outfit_time_loc.csv  # Required for /api/outfits
+│   ├── outfit_time.csv  # Required for /api/outfits
+│   └── cropped_people/  # Directory containing image assets
+│       └── [image_files] # Served via /image/<path>
+├── src/                 # SvelteKit frontend source
+├── app.py               # Flask backend server
+├── requirements.txt     # Backend dependencies
+├── package.json         # Frontend dependencies
+└── .env                 # API tokens
+
+```
+
+#### Path Requirements
+
+* **CSVs**: The backend looks specifically for `data/item_base.csv` and `data/outfit_base.csv`.
+* **Images**: All cropped pedestrian images must be placed in `data/cropped_people/` to be accessible at the `/image/` endpoint.
+
+### **3. Backend Setup**
+Create and activate virtual environment:
+
+* Linux/macOS: `python -m venv .venv && source .venv/bin/activate`
+* Windows: `python -m venv .venv && .venv\Scripts\activate`
+
+Install dependencies:
+`pip install -r requirements.txt`
+*(Note: Covers required packages like flask and flask-cors)*
+
+### **4. Frontend Setup**
+Install Node dependencies:
+`npm install`
+*(Note: Covers required packages like vite and embedding-atlas)*
+
+### **5. Execution**
+Start backend server:
+`python app.py`
+
+Start frontend server (in a separate terminal):
+`npm run dev`
+
+### **6. Access**
+Open `http://localhost:5173/` in a web browser.
+
+
+# Workflow
+```
+generate_feature_matrica.py
+
+        ↓ (produces CSVs with x/y coords)
+
+app.py  →  /api/items  /api/outfits
+
+        ↓ (JSON)
+
+SvelteKit frontend
+
+        ↓ (converts to typed arrays)
+
+EmbeddingView (Embedding Atlas)
+```
+
+The application works with CSV files that were genererated from generate_feature_matrica.py. To substitute them for different files change the path in the respectful routed in app.py: @app.route("/api/outfits") or @app.route("/api/items")
+
+## Pipeline Implementation
+The pipeline to get the data to display is described in this [data preparation backend](https://github.com/a-rabanus/dataviz_backend).
+
+
+## Structure
 The project follows the standard SvelteKit structure with a focus on modular visualization components: 
 * src/routes/: Contains the application pages (about, credits, globe)
 * +page.svelte: The interactive landing page 
@@ -10,14 +104,10 @@ The project follows the standard SvelteKit structure with a focus on modular vis
 * src/lib/: Reusable code:  visualization/: Contains StraterKitLayout.svelte and EmbeddingView.svelte for displaying the point cloud
 * static/: Static assets (images, icons, and fashion data samples).
 
-## Pipeline Implementation
-The pipeline to get the data to display is described in this [data preparation backend](https://github.com/a-rabanus/dataviz_backend).
-
----
-
 ## Frontend & UI
 
 A Svelte 5 application utilizing Cosmos.gl for high-performance WebGL point cloud rendering. 
+
 
 ### Tech Stack
 
@@ -33,60 +123,6 @@ A Svelte 5 application utilizing Cosmos.gl for high-performance WebGL point clou
 | EmbeddingView.svelte | | holds the logic for the point cloud | 
 | StarterKitLayout.svelte | | holds teh layout for the application and embedds teh logic/EmbeddingView.svelte  | 
 
-
-### Workflow
-```
-generate_feature_matrica.py
-
-        ↓ (produces CSVs with x/y coords)
-
-app.py  →  /api/items  /api/outfits
-
-        ↓ (JSON)
-
-SvelteKit frontend
-
-        ↓ (converts to typed arrays)
-
-EmbeddingView (Embedding Atlas)
-
-
-The application works with CSV files that were genererated from generate_feature_matrica.py. To substitute them for different files change the path in the respectful routed in app.py: @app.route("/api/outfits") or @app.route("/api/items")
-
-
-### Run the development server:
-To start the developemt server to test the pointclouds locally. 
-
-If not yet installed: 
-```ini
-npm install -D vite 'npm run dev
-```
-Install the install the Embedding View library:
-```ini
-npm install embedding-atlas
-```
-
-
-We are using flask and flask-cors for connecting backend and frontend to display the Data as point cloud.
-To install, run: 
-
-```ini
-pip install flask flask-cors
-```
-
-Then run the scirpt to start the backend:
-
-```ini
-python app.py
-```
-
-To start the vite server for teh forntend run:
-```ini
-npm run dev
-```
-Open http://localhost:5173/ in the bowser and the website should appear.
-
-
 ---
 
 ## Performance and Monitoring
@@ -98,27 +134,10 @@ The following tools are used to identify resource-heavy elements and optimize th
 
 ---
 
-## Environment Configuration
-
-Create a `.env` file in the root directory:
-
-```ini
-MAPILLARY_ACCESS_TOKEN="YOUR_TOKEN_HERE"
-
-```
-
-## Database Schema
-
-The system uses `src/db/db_utils.py` for all database interactions. The schema includes:
-
-* `cities`: Geographic boundaries and scan status.
-* `images_detected`: Raw Mapillary image metadata.
-* `person_detected`: Links cropped images to original sources.
-* `clothing_item_detected`: Extracted features and attributes.
-
----
-
 ## References
 
 * [DeepFashion2 Dataset](https://github.com/switchablenorms/DeepFashion2)
 * [Figma Design Prototype](https://www.figma.com/design/xWFdUtSlsngfeJKi33LZEx/Portfolio?node-id=0-1&t=JhhHZ7DehM6H0LSy-1)
+
+
+
