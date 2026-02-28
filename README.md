@@ -138,6 +138,3 @@ The following tools are used to identify resource-heavy elements and optimize th
 
 * [DeepFashion2 Dataset](https://github.com/switchablenorms/DeepFashion2)
 * [Figma Design Prototype](https://www.figma.com/design/xWFdUtSlsngfeJKi33LZEx/Portfolio?node-id=0-1&t=JhhHZ7DehM6H0LSy-1)
-
-
-
