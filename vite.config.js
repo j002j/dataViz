@@ -9,7 +9,7 @@ export default defineConfig({
         sveltekit(),
     ],
     optimizeDeps: {
-        exclude: ['embedding-atlas']
+        exclude: ['embedding-atlas', 'svelte-range-slider-pips']
     },
     server: {
         watch: {
