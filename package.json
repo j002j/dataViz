@@ -2,6 +2,8 @@
     "dependencies": {
         "@cosmos.gl/graph": "^2.6.2",
         "@tailwindcss/vite": "^4.1.18",
+        "@uwdata/mosaic-core": "^0.21.1",
+        "@uwdata/mosaic-sql": "^0.21.1",
         "embedding-atlas": "^0.16.1",
         "stats.js": "^0.17.0",
         "svelte-range-slider-pips": "^4.1.0",
